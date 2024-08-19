@@ -1,6 +1,5 @@
 get_properties(x) = x.properties
 
-
 macro dynamic(expr)
     expr.head == :struct || error("@dynamic can only be applied to struct definitions")
 

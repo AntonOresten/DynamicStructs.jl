@@ -21,7 +21,7 @@ function Base.delete!(p::Properties, name::Symbol)
     return p
 end
 
-Base.propertynames(p::Properties, private::Bool=false) = ((private ? fieldnames(Properties) : ())..., collect(keys(p))...,)
+Base.propertynames(p::Properties, ::Bool=false) = (collect(keys(p))...,)
 
 Base.getproperty(p::Properties, name::Symbol) = getindex(p, name)
 Base.setproperty!(p::Properties, name::Symbol, value) = setindex!(p, value, name)

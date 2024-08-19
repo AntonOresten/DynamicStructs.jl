@@ -95,11 +95,17 @@ using Test
     end
 
     @testset "Properties Struct" begin
-        props = Properties(a=1, b="two")
-        @test props.a == 1
-        @test props[:b] == "two"
-        @test length(props) == 2
-        @test collect(keys(props)) == [:a, :b]
-        @test collect(values(props)) == [1, "two"]
+        p = Properties(a=1, b="two")
+        p.c = 3.0
+        
+        @test propertynames(p) == (:a, :b, :c)
+        @test p.a == 1
+        @test p[:b] == "two"
+        @test p.c == 3.0
+
+        @test length(p) == 3
+        @test iterate(p)[1] == first(p)
+        @test collect(keys(p)) == [:a, :b, :c]
+        @test collect(values(p)) == [1, "two", 3.0]
     end
 end
