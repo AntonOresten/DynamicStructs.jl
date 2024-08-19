@@ -31,3 +31,7 @@ p.nickname # ERROR
 using Pkg
 Pkg.add("DynamicStructs")
 ```
+
+## See also:
+- [DynamicObjects.jl](https://github.com/nsiccha/DynamicObjects.jl)
+- [PropertyDicts.jl](https://github.com/JuliaCollections/PropertyDicts.jl)
