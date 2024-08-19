@@ -22,7 +22,7 @@ p.age = 43
 println(p.age)  # 43
 
 delete!(p, :nickname)
-println(p.nickname) # ERROR
+p.nickname # ERROR
 ```
 
 ## Installation
