@@ -19,7 +19,7 @@ macro dynamic(expr)
     end
 
     insert_pos = findfirst(x -> x isa Expr && x.head in (:function, :(=)), struct_body)
-    insert!(struct_body, isnothing(insert_pos) ? length(struct_body) + 1 : insert_pos, :(_properties::Properties))
+    insert!(struct_body, insert_pos === nothing ? length(struct_body) + 1 : insert_pos, :(_properties::Properties))
 
     type_param_names = [tp isa Expr ? tp.args[1] : tp for tp in type_params]
     struct_name_type_params = isempty(type_params) ? struct_name : Expr(:curly, struct_name, type_param_names...)

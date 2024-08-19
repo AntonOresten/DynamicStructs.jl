@@ -9,10 +9,16 @@ using Test
     end
 
     @testset "Default constructor" begin
-        p = Person("Sackarias", 16, Properties(; sport="Tennis"))
+        p = Person("Sackarias", 16, Properties(sport="Tennis"))
         @test p.name == "Sackarias"
         @test p.age == 16
         @test p.sport == "Tennis"
+    end
+
+    @testset "Show" begin
+        p = Person("Jacob", 19, instrument="guitar")
+        str = sprint(show, MIME("text/plain"), p)
+        @test str == "Person:\n  2 fields:\n    name::String = \"Jacob\"\n    age::Int64 = 19\n  1 property:\n    instrument::String = \"guitar\""
     end
 
     @testset "Basic Functionality" begin

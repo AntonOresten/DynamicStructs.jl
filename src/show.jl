@@ -21,7 +21,7 @@ function showdynamic(io::IO, x::T; indent=2) where T
         printfield(context, name, getproperty(x, name); indent=2indent)
     end
 
-    properties = keys(get_properties(x))
+    properties = keys(x._properties)
     n = length(properties)
     printstyled(context, "\n", " "^indent, iszero(n) ? "no" : n, " ", isone(n) ? "property" : "properties", ":", color=:yellow)
     for name in properties
