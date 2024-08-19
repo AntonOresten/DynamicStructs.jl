@@ -2,7 +2,6 @@ module DynamicStructs
 
 using OrderedCollections: OrderedDict
 
-export Properties
 export @dynamic, get_properties
 
 include("properties.jl")

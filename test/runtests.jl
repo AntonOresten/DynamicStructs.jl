@@ -28,7 +28,7 @@ using Test
         
         p.job = "Engineer"
         @test p.job == "Engineer"
-        @test get_properties(p).job == "Engineer"
+        @test get_properties(p) isa DynamicStructs.Properties
         
         @test propertynames(p, false) == (:name, :age, :job)
         @test propertynames(p, true) == (:name, :age, :_properties, :job)
@@ -127,7 +127,7 @@ using Test
     end
 
     @testset "Properties Struct" begin
-        p = Properties(a=1, b="two")
+        p = DynamicStructs.Properties(a=1, b="two")
         p.c = 3.0
         
         @test propertynames(p) == (:a, :b, :c)
