@@ -1,5 +1,32 @@
 get_properties(x) = getfield(x, :_properties)
 
+"""
+    @dynamic [mutable] struct ... end
+
+## Examples
+
+```julia
+using DynamicStructs
+
+@dynamic struct Spaceship
+    name::String
+end
+
+ship = Spaceship("Hail Mary"; crew=["Grace", "Yao", "Ilyukhina"])
+
+ship.name # "Hail Mary"
+ship.crew # ["Grace", "Yao", "Ilyukhina"]
+
+ship.crew = ["Grace"]
+ship.fuel = 20906.0
+
+ship.crew # ["Grace"]
+ship.fuel # 20906.0
+
+delete!(ship, :fuel)
+ship.fuel # ERROR: Spaceship instance has no field or property fuel
+```
+"""
 macro dynamic(expr)
     expr.head == :struct || error("@dynamic can only be applied to struct definitions")
 
