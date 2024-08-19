@@ -28,11 +28,9 @@ using Test
         
         p.job = "Engineer"
         @test p.job == "Engineer"
-        @test p._properties.job == "Engineer"
         @test get_properties(p).job == "Engineer"
         
-        @test propertynames(p) == (:name, :age, :job)
-        @test propertynames(p, true) == (:name, :age, :_properties, :job)
+        @test propertynames(p) == (:name, :age, :properties, :job)
     end
 
     @testset "Constructor with Keywords" begin

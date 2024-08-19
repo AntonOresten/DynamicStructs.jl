@@ -1,4 +1,4 @@
-function get_properties end
+get_properties(x) = x.properties
 
 macro dynamic(expr)
     expr.head == :struct || error("@dynamic can only be applied to struct definitions")
@@ -19,7 +19,7 @@ macro dynamic(expr)
     end
 
     insert_pos = findfirst(x -> x isa Expr && x.head in (:function, :(=)), struct_body)
-    insert!(struct_body, insert_pos === nothing ? length(struct_body) + 1 : insert_pos, :(_properties::Properties))
+    insert!(struct_body, insert_pos === nothing ? length(struct_body) + 1 : insert_pos, :(properties::Properties))
 
     type_param_names = [tp isa Expr ? tp.args[1] : tp for tp in type_params]
     struct_name_type_params = isempty(type_params) ? struct_name : Expr(:curly, struct_name, type_param_names...)
@@ -41,15 +41,21 @@ macro dynamic(expr)
             $constructor_type_params
         end))
         $(esc(quote
-            get_properties(x::$struct_name) = x._properties
-            Base.propertynames(x::$struct_name, private::Bool=false) = 
-                ((private ? fieldnames(typeof(x)) : fieldnames(typeof(x))[1:end-1])..., keys(get_properties(x))...)
-            Base.getproperty(x::$struct_name, name::Symbol) = hasfield(typeof(x), name) ?
-                    getfield(x, name) : name in keys(get_properties(x)) ?
-                    get_properties(x)[name] : throw(ErrorException("$(typeof(x)) instance has no field or property $name"))
-            Base.setproperty!(x::$struct_name, name::Symbol, value) = 
-                hasfield(typeof(x), name) ? setfield!(x, name, value) : (get_properties(x)[name] = value)
+            Base.propertynames(x::$struct_name, private::Bool=false) = (fieldnames(typeof(x))..., keys(get_properties(x))...)
+
+            function Base.getproperty(x::$struct_name, name::Symbol)
+                hasfield(typeof(x), name) && return getfield(x, name)
+                name in keys(get_properties(x)) && return get_properties(x)[name]
+                throw(ErrorException("$(typeof(x)) instance has no field or property $name"))
+            end
+
+            function Base.setproperty!(x::$struct_name, name::Symbol, value)
+                hasfield(typeof(x), name) && return setfield!(x, name, value)
+                return setindex!(get_properties(x), value, name)
+            end
+
             Base.delete!(x::$struct_name, name::Symbol) = (delete!(get_properties(x), name); x)
+
             Base.show(io::IO, ::MIME"text/plain", x::$struct_name) = $showdynamic(io, x)
         end))
     end
