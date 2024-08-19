@@ -22,7 +22,17 @@ using Test
     end
 
     @testset "Hash" begin
-        @test hash(Person("Alice", 30)) != hash(Person("Bob", 25))
+        @dynamic struct Vec
+            x::Int
+        end
+
+        @test hash(Vec(0)) == hash(Vec(0))
+        @test hash(Vec(0)) != hash(Vec(1))
+        @test hash(Vec(0)) != hash(Vec(0, y=1))
+        @test hash(Vec(0, y=1)) == hash(Vec(0, y=1))
+        @test hash(Vec(0, y=1)) != hash(Vec(1, y=1))
+        @test hash(Vec(0, y=1)) != hash(Vec(0, y=0))
+        @test hash(Vec(0, y=1)) != hash(Vec(0, y=1, z=2))
     end
 
     @testset "Basic Functionality" begin
