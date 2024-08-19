@@ -15,7 +15,7 @@ using DynamicStructs
     name::String
 end
 
-ship = Spaceship("Hail Mary"; crew=["Grace", "Yao", "Ilyukhina"])
+ship = Spaceship("Hail Mary", crew=["Grace", "Yao", "Ilyukhina"])
 
 ship.name # "Hail Mary"
 ship.crew # ["Grace", "Yao", "Ilyukhina"]
