@@ -35,21 +35,27 @@ macro dynamic(expr)
         end
     end
 
-    constructor_params = if !isempty(type_param_names)
+    constructor_args = [:($(fields[i])::$(field_types[i])) for i in 1:length(fields)]
+    constructor_no_params = if !isempty(type_param_names)
         quote
-            $struct_name_type_param_names(args...; kwargs...) where {$(type_param_names...)} = 
-                new(args..., Properties(; kwargs...))
+            $struct_name($(constructor_args...); kwargs...) where {$(type_param_names...)} =
+                new{$(type_param_names...)}($(fields...), Properties(; kwargs...))
+        end
+    else
+        quote
+            $struct_name($(constructor_args...); kwargs...) =
+                new($(fields...), Properties(; kwargs...))
         end
     end
 
-    constructor_args = [:($(fields[i])::$(field_types[i])) for i in 1:length(fields)]
-    constructor_no_params = quote
-        $struct_name($(constructor_args...); kwargs...) where {$(type_param_names...)} =
-            $struct_name{$(type_param_names...)}($(constructor_args...); kwargs...)
+    constructor_params = if !isempty(type_param_names)
+        quote
+            $struct_name{$(type_param_names...)}(args...; kwargs...) where {$(type_param_names...)} = 
+                new{$(type_param_names...)}(args..., Properties(; kwargs...))
+        end
     end
 
-
-    push!(struct_body, constructor_params, constructor_no_params)
+    push!(struct_body, constructor_no_params, constructor_params)
 
     return quote
         $(esc(expr))
@@ -66,6 +72,12 @@ macro dynamic(expr)
                 hasfield(typeof(x), name) && return setfield!(x, name, value)
                 return setindex!(get_properties(x), value, name)
             end
+
+            Base.hash(x::$struct_name, h::UInt) =
+                hash($struct_name, foldr(hash, getfield(x, fieldname) for fieldname in fieldnames($struct_name); init=h))
+
+            Base.:(==)(x::$struct_name, y::$struct_name) =
+                propertynames(x) == propertynames(y) && all(name -> getfield(x, name) == getfield(y, name), fieldnames($struct_name))
 
             Base.delete!(x::$struct_name, name::Symbol) = (delete!(get_properties(x), name); x)
 

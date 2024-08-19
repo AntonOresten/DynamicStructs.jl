@@ -9,7 +9,7 @@ using Test
     end
 
     @testset "Default constructor" begin
-        p = Person("Sackarias", 16, Properties(sport="Tennis"))
+        p = Person("Sackarias", 16, sport="Tennis")
         @test p.name == "Sackarias"
         @test p.age == 16
         @test p.sport == "Tennis"
@@ -30,7 +30,8 @@ using Test
         @test p.job == "Engineer"
         @test get_properties(p).job == "Engineer"
         
-        @test propertynames(p) == (:name, :age, :_properties, :job)
+        @test propertynames(p, false) == (:name, :age, :job)
+        @test propertynames(p, true) == (:name, :age, :_properties, :job)
     end
 
     @testset "Constructor with Keywords" begin
@@ -117,8 +118,12 @@ using Test
             x::T
             y::T
 
-            Point() = Point{Int}(1, 1)
+            Point() = Point(1, 1)
+            Point{T}() where T = Point{T}(1, 1)
         end
+
+        @test Point() == Point{Int}(1, 1)
+        @test Point{Float64}() == Point(1.0, 1.0)
     end
 
     @testset "Properties Struct" begin

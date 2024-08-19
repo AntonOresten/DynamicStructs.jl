@@ -12,6 +12,7 @@ Base.length(p::Properties) = length(get_dict(p))
 Base.iterate(p::Properties, args...) = iterate(get_dict(p), args...)
 Base.keys(p::Properties) = keys(get_dict(p))
 Base.values(p::Properties) = values(get_dict(p))
+Base.get(p::Properties, name::Symbol, default) = get(get_dict(p), name, default)
 
 Base.getindex(p::Properties, name::Symbol) = getindex(get_dict(p), name)
 Base.setindex!(p::Properties, value, name::Symbol) = setindex!(get_dict(p), value, name)
