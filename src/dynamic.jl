@@ -1,4 +1,4 @@
-get_properties(x) = x.properties
+get_properties(x) = getfield(x, :_properties)
 
 macro dynamic(expr)
     expr.head == :struct || error("@dynamic can only be applied to struct definitions")
@@ -18,30 +18,43 @@ macro dynamic(expr)
         struct_type, []
     end
 
+    insert_pos = findfirst(x -> x isa Expr && x.head in (:function, :(=)), struct_body)
+    insert_pos = insert_pos === nothing ? length(struct_body) + 1 : insert_pos
+    insert!(struct_body, insert_pos, :(_properties::Properties))
+
     get_type_param_name = tp -> tp isa Expr ? get_type_param_name(tp.args[1]) : tp
     type_param_names = [get_type_param_name(tp) for tp in type_params]
     struct_name_type_param_names = isempty(type_param_names) ? struct_name : Expr(:curly, struct_name, type_param_names...)
 
-    insert_pos = findfirst(x -> x isa Expr && x.head in (:function, :(=)), struct_body)
-    insert!(struct_body, insert_pos === nothing ? length(struct_body) + 1 : insert_pos, :(properties::Properties))
-
-    constructor_no_params = :($struct_name(args...; kwargs...) = $struct_name(args..., Properties(; kwargs...)))
+    fields = []
+    field_types = []
+    for f in struct_body
+        if f isa Expr && f.head == :(::) && f.args[1] != :_properties
+            push!(fields, f.args[1])
+            push!(field_types, f.args[2])
+        end
+    end
 
     constructor_params = if !isempty(type_param_names)
         quote
             $struct_name_type_param_names(args...; kwargs...) where {$(type_param_names...)} = 
-                $struct_name_type_param_names(args..., Properties(; kwargs...))
+                new(args..., Properties(; kwargs...))
         end
     end
+
+    constructor_args = [:($(fields[i])::$(field_types[i])) for i in 1:length(fields)]
+    constructor_no_params = quote
+        $struct_name($(constructor_args...); kwargs...) where {$(type_param_names...)} =
+            $struct_name{$(type_param_names...)}($(constructor_args...); kwargs...)
+    end
+
+
+    push!(struct_body, constructor_params, constructor_no_params)
 
     return quote
         $(esc(expr))
         $(esc(quote
-            $constructor_no_params
-            $constructor_params
-        end))
-        $(esc(quote
-            Base.propertynames(x::$struct_name, private::Bool=false) = (fieldnames(typeof(x))..., keys(get_properties(x))...)
+            Base.propertynames(x::$struct_name, private::Bool=false) = ((private ? fieldnames(typeof(x)) : fieldnames(typeof(x))[1:end-1])..., keys(get_properties(x))...)
 
             function Base.getproperty(x::$struct_name, name::Symbol)
                 hasfield(typeof(x), name) && return getfield(x, name)

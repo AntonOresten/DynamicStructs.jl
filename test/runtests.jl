@@ -30,7 +30,7 @@ using Test
         @test p.job == "Engineer"
         @test get_properties(p).job == "Engineer"
         
-        @test propertynames(p) == (:name, :age, :properties, :job)
+        @test propertynames(p) == (:name, :age, :_properties, :job)
     end
 
     @testset "Constructor with Keywords" begin
@@ -92,6 +92,33 @@ using Test
         # But we can still add new properties
         p.job = "Teacher"
         @test p.job == "Teacher"
+    end
+
+    @testset "Mutable Structs" begin
+        @dynamic mutable struct MutablePerson
+            name::String
+        end
+
+        p = MutablePerson("Franco", age=35)
+        @test p.name == "Franco"
+        @test p.age == 35
+        
+        # We can modify the name field
+        p.name = "Francisco"
+        @test p.name == "Francisco"
+        
+        # as well as add new properties
+        p.job = "General"
+        @test p.job == "General"
+    end
+
+    @testset "Custom constructor" begin
+        @dynamic struct Point{T}
+            x::T
+            y::T
+
+            Point() = Point{Int}(1, 1)
+        end
     end
 
     @testset "Properties Struct" begin
