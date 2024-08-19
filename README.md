@@ -43,9 +43,8 @@ julia> ship
 Spaceship:
   1 field:
     name::String = "Hail Mary"
-  2 properties:
+  1 property:
     crew::Vector{String} = ["Grace"]
-    fuel::Float64 = 20906.0
 ```
 
 ## Installation
