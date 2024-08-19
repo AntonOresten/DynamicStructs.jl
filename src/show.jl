@@ -1,10 +1,10 @@
 truncate(s::AbstractString, len::Integer) = length(s) > len ? String(first(s, len-1) * '…') : s
 
-function printfield(io::IO, name::Symbol, value; indent=0)
+function printfield(io::IO, name::Symbol, value; showtype=true, indent=0)
     print(io, "\n", " "^indent)
     printstyled(io, string(name); color=:white)
-    printstyled(io, "::"; color=:red)
-    printstyled(io, replace(string(typeof(value)), " " => ""); color=:blue)
+    showtype && printstyled(io, "::"; color=:red)
+    showtype && printstyled(io, replace(string(typeof(value)), " " => ""); color=:blue)
     printstyled(io, " = "; color=:red)
     printstyled(io, truncate(repr(value; context=io), 100))
 end
