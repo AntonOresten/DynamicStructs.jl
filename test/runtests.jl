@@ -21,6 +21,10 @@ using Test
         @test str == "Person:\n  2 fields:\n    name::String = \"Jacob\"\n    age::Int64 = 19\n  1 property:\n    instrument::String = \"guitar\""
     end
 
+    @testset "Hash" begin
+        @test hash(Person("Alice", 30)) != hash(Person("Bob", 25))
+    end
+
     @testset "Basic Functionality" begin
         p = Person("Alice", 30)
         @test p.name == "Alice"
@@ -134,6 +138,7 @@ using Test
         @test p.a == 1
         @test p[:b] == "two"
         @test p.c == 3.0
+        @test (:c => 3.0) in p
 
         @test length(p) == 3
         @test iterate(p)[1] == first(p)
