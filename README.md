@@ -20,8 +20,8 @@ ship = Spaceship("Hail Mary", crew=["Grace", "Yao", "Ilyukhina"])
 ship.name # "Hail Mary"
 ship.crew # ["Grace", "Yao", "Ilyukhina"]
 
-ship.crew = ["Grace"]
-ship.fuel = 20906.0
+ship.crew = ["Grace"] # reassign crew
+ship.fuel = 20906.0 # assign fuel
 
 ship.crew # ["Grace"]
 ship.fuel # 20906.0
