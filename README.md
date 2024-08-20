@@ -33,9 +33,10 @@ ship.fuel # ERROR: Spaceship instance has no field or property fuel
 ## Features
 
 - Create structs with both static fields and dynamic properties
+- Use `mutable struct` to allow modification of static fields
 - Add, modify, and delete dynamic properties at runtime
-- Full type safety for static properties
-- Dynamic properties use `OrderedDict` under the hood, maintaining insertion order for predictable iteration
+- Full type safety for static fields
+- Access the underlying `OrderedCollections.OrderedDict` of dynamic properties with `properties(ship)`:
 - Custom show method for pretty-printing:
 
 ```julia
@@ -56,7 +57,7 @@ Pkg.add("DynamicStructs")
 
 ## Implementation details
 
-The `@dynamic` macro adds a `_properties::DynamicStructs.Properties` field to the struct definition. The `DynamicStructs.Properties` type wraps an `OrderedDict{Symbol, Any}` that stores the dynamic properties. The `Base.getproperty` and `Base.setproperty!` methods for the new type are defined to access this dictionary.
+The `@dynamic` macro adds a `_properties::OrderedCollections.OrderedDict{Symbol, Any}` field to the struct definition. The `Base.getproperty` and `Base.setproperty!` methods for the new type are defined to access this dictionary when the property being accessed is not a field.
 
 A `show` method for contexts like the REPL is defined to display the fields and dynamic properties of the new type in a nice and clear format.
 

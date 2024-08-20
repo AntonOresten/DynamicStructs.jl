@@ -14,17 +14,18 @@ function showdynamic(io::IO, x::T; indent=2) where T
 
     print(context, summary(x), ":")
 
-    fields = fieldnames(T)[1:end-1]
-    n = length(fields)
-    printstyled(context, "\n", " "^indent, iszero(n) ? "no" : n, " ", isone(n) ? "field" : "fields", ":", color=:yellow)
-    for name in fieldnames(T)[1:end-1]
+    properties = getproperties(x, fields=false)
+    fields = setdiff(getproperties(x, fields=true), properties)
+
+    printstyled(context, "\n", " "^indent, isempty(fields) ? "no" : length(fields), " ", isone(length(fields)) ? "field" : "fields", ":", color=:yellow)
+    for name in fields
         printfield(context, name, getproperty(x, name); indent=2indent)
     end
 
-    properties = keys(get_properties(x))
-    n = length(properties)
-    printstyled(context, "\n", " "^indent, iszero(n) ? "no" : n, " ", isone(n) ? "property" : "properties", ":", color=:yellow)
+    printstyled(context, "\n", " "^indent, isempty(properties) ? "no" : length(properties), " ", isone(length(properties)) ? "property" : "properties", ":", color=:yellow)
     for name in properties
         printfield(context, name, getproperty(x, name); indent=2indent)
     end
 end
+
+showdynamic(x; kwargs...) = showdynamic(stdout, x; kwargs...)
