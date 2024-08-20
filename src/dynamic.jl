@@ -60,7 +60,7 @@ macro dynamic(expr)
             $struct_name($(constructor_args...); kwargs...) where {$(type_param_names...)} =
                 new{$(type_param_names...)}($(fields...), $OrderedDict{Symbol,Any}(kwargs...))
                 
-            $struct_name{$(type_param_names...)}(constructor_args...; kwargs...) where {$(type_param_names...)} =
+            $struct_name{$(type_param_names...)}(fields...; kwargs...) where {$(type_param_names...)} =
                 new{$(type_param_names...)}(fields..., $OrderedDict{Symbol,Any}(kwargs...))
         end
     end
