@@ -27,5 +27,3 @@ function showdynamic(io::IO, x::T; indent=2) where T
         printfield(context, name, getproperty(x, name); indent=2indent)
     end
 end
-
-showdynamic(x; kwargs...) = showdynamic(stdout, x; kwargs...)
