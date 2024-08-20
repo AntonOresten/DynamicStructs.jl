@@ -26,16 +26,20 @@ ship.fuel = 20906.0 # assign fuel
 ship.crew # ["Grace"]
 ship.fuel # 20906.0
 
-delete!(ship, :fuel)
+@has ship.fuel # true
+@del ship.fuel # delete fuel
+@has ship.fuel # false
 ship.fuel # ERROR: Spaceship instance has no field or property fuel
+
 ```
 
 ## Features
 
-- Create structs with both fields and dynamic properties
+- Create structs with both fields and dynamic properties using the `@dynamic` macro
 - Use `mutable struct` to allow for modifying field values
-- Add, modify, and delete dynamic properties at runtime
 - Full type safety for fields
+- Add, modify, and delete dynamic properties at runtime
+- `@has` and `@del` macros to check for and delete dynamic properties
 - Get a tuple of the current dynamic properties with `getproperties(ship; fields=false)`
 
 ```julia

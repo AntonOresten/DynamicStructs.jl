@@ -57,9 +57,9 @@ using Test
 
     @testset "Deletion" begin
         p = Person("Charlie", 40, temporary=true)
-        @test hasproperty(p, :temporary)
-        delete!(p, :temporary)
-        @test !hasproperty(p, :temporary)
+        @test @has p.temporary
+        @del p.temporary
+        @test !@has p.temporary
     end
 
     @testset "Error Handling" begin

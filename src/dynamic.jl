@@ -2,6 +2,32 @@ const PROPERTIES_FIELD = :_properties
 
 @inline property_dict(x) = getfield(x, PROPERTIES_FIELD)
 
+delproperty!(x, name::Symbol) = (delete!(property_dict(x), name); x)
+
+"""
+    @del x.name
+
+Delete the dynamic property `:name` from dynamic type `x`. 
+Equivalent to `DynamicStructs.delproperty!(x, :name)`.
+"""
+macro del(expr)
+    expr isa Expr && expr.head == :. || error()
+    x, name = expr.args
+    return esc(:($delproperty!($x, $name)))
+end
+
+"""
+    @has x.name
+
+Check if `x` has a property `:name`.
+Equivalent to `Base.hasproperty(x, :name)`.
+"""
+macro has(expr)
+    expr isa Expr && expr.head == :. || error()
+    x, name = expr.args
+    return esc(:(Base.hasproperty($x, $name)))
+end
+
 """
     @dynamic [mutable] struct ... end
 
@@ -30,7 +56,7 @@ ship.fuel # ERROR: Spaceship instance has no field or property fuel
 ```
 """
 macro dynamic(expr)
-    expr.head == :struct || error("@dynamic can only be applied to struct definitions")
+    expr isa Expr && expr.head == :struct || error("`@dynamic` can only be applied to struct definitions")
 
     struct_def = expr.args[2]
     struct_body = expr.args[3].args
@@ -92,9 +118,8 @@ macro dynamic(expr)
 
             Base.:(==)(x::$struct_name, y::$struct_name) = !any(name -> getfield(x, name) != getfield(y, name), fieldnames($struct_name))
 
-            Base.delete!(x::$struct_name, name::Symbol) = (delete!($property_dict(x), name); x)
-
             Base.show(io::IO, ::MIME"text/plain", x::$struct_name) = $showdynamic(io, x)
         end))
+        nothing
     end
 end
