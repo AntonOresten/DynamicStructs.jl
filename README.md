@@ -30,7 +30,6 @@ ship.fuel # 20906.0
 @del ship.fuel # delete fuel
 @has ship.fuel # false
 ship.fuel # ERROR: Spaceship instance has no field or property fuel
-
 ```
 
 ## Features

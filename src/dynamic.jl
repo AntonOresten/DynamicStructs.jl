@@ -40,18 +40,20 @@ using DynamicStructs
     name::String
 end
 
-ship = Spaceship("Hail Mary"; crew=["Grace", "Yao", "Ilyukhina"])
+ship = Spaceship("Hail Mary", crew=["Grace", "Yao", "Ilyukhina"])
 
 ship.name # "Hail Mary"
 ship.crew # ["Grace", "Yao", "Ilyukhina"]
 
-ship.crew = ["Grace"]
-ship.fuel = 20906.0
+ship.crew = ["Grace"] # reassign crew
+ship.fuel = 20906.0 # assign fuel
 
 ship.crew # ["Grace"]
 ship.fuel # 20906.0
 
-delete!(ship, :fuel)
+@has ship.fuel # true
+@del ship.fuel # delete fuel
+@has ship.fuel # false
 ship.fuel # ERROR: Spaceship instance has no field or property fuel
 ```
 """
