@@ -32,11 +32,17 @@ ship.fuel # ERROR: Spaceship instance has no field or property fuel
 
 ## Features
 
-- Create structs with both static fields and dynamic properties
-- Use `mutable struct` to allow modification of static fields
+- Create structs with both fields and dynamic properties
+- Use `mutable struct` to allow for modifying field values
 - Add, modify, and delete dynamic properties at runtime
-- Full type safety for static fields
-- Access the underlying `OrderedCollections.OrderedDict` of dynamic properties with `properties(ship)`:
+- Full type safety for fields
+- Get a tuple of the current dynamic properties with `getproperties(ship; fields=false)`
+
+```julia
+julia> getproperties(ship; fields=false)
+(:crew,)
+```
+
 - Custom show method for pretty-printing:
 
 ```julia
