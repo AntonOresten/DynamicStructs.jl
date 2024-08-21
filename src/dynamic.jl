@@ -121,7 +121,8 @@ macro dynamic(expr)
             Base.:(==)(x::$struct_name, y::$struct_name) = !any(name -> getfield(x, name) != getfield(y, name), fieldnames($struct_name))
 
             Base.show(io::IO, ::MIME"text/plain", x::$struct_name) = $showdynamic(io, x)
+
+            $struct_name
         end))
-        nothing
     end
 end
