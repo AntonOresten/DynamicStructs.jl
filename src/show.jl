@@ -1,4 +1,5 @@
-truncate(s::AbstractString, len::Integer) = length(s) > len ? "<field value exceeds max length>" : s
+# TODO: optimize handling of long field value representations
+minimize(str::AbstractString, threshold::Integer) = length(str) > threshold ? "<exceeds max length>" : str
 
 function printfield(io::IO, name::Symbol, value; showtype=true, indent=0)
     print(io, "\n", " "^indent)
@@ -6,7 +7,7 @@ function printfield(io::IO, name::Symbol, value; showtype=true, indent=0)
     showtype && printstyled(io, "::"; color=:red)
     showtype && printstyled(io, replace(string(typeof(value)), " " => ""); color=:blue)
     printstyled(io, " = "; color=:red)
-    printstyled(io, truncate(repr(value; context=io), 100))
+    printstyled(io, minimize(repr(value; context=io), 80))
 end
 
 function showdynamic(io::IO, x::T) where T
