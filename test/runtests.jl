@@ -69,6 +69,18 @@ using Test
         @test_throws ErrorException p.nonexistent
     end
 
+    @testset "Untyped fields" begin
+        @dynamic struct UntypedPerson
+            name
+            age
+        end
+
+        p = UntypedPerson("Eva", 45, job="Doctor")
+        @test p.name == "Eva"
+        @test p.age == 45
+        @test p.job == "Doctor"
+    end
+
     @testset "Generic Types" begin
         @dynamic struct GenericPerson{T}
             id::T

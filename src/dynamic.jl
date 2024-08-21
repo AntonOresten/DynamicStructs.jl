@@ -71,9 +71,14 @@ macro dynamic(expr)
 
     fields, field_types = [], []
     for f in struct_body
-        if f isa Expr && f.head == :(::)
+        if f isa Symbol
+            push!(fields, f)
+            push!(field_types, :Any)
+        elseif f isa Expr && f.head == :(::)
             push!(fields, f.args[1])
             push!(field_types, f.args[2])
+        elseif f isa Expr && f.head in (:function, :(=))
+            break
         end
     end
 
