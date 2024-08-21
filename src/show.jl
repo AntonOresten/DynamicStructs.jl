@@ -1,4 +1,4 @@
-truncate(s::AbstractString, len::Integer) = length(s) > len ? String(first(s, len-1) * '…') : s
+truncate(s::AbstractString, len::Integer) = length(s) > len ? "<field value exceeds max length>" : s
 
 function printfield(io::IO, name::Symbol, value; showtype=true, indent=0)
     print(io, "\n", " "^indent)
@@ -9,7 +9,22 @@ function printfield(io::IO, name::Symbol, value; showtype=true, indent=0)
     printstyled(io, truncate(repr(value; context=io), 100))
 end
 
-function showdynamic(io::IO, x::T; indent=2) where T
+function showdynamic(io::IO, x::T) where T
+    print(io, "$T(")
+    public_fields = fieldnames(T)[1:end-1]
+    for (i, fieldname) in enumerate(public_fields)
+        print(io, repr(getfield(x, fieldname)))
+        i < length(public_fields) && print(io, ", ")
+    end
+    isempty(getproperties(x; fields=false)) || print(io, "; ")
+    for (i, (name, value)) in enumerate(property_dict(x))
+        print(io, name, "=", repr(value))
+        i < length(property_dict(x)) && print(io, ", ")
+    end
+    print(io, ")")
+end
+
+function showdynamic_pretty(io::IO, x::T; indent=2) where T
     context = IOContext(io, :compact => true, :limit => true)
 
     print(context, summary(x), ":")

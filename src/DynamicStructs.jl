@@ -9,10 +9,10 @@ export @dynamic
 """
     getproperties(x; fields=true, private=false)
 
-Get the properties `x`, optionally excluding fields and/or including private properties.
+Get the properties of `x`, optionally excluding fields and/or including private properties.
 `getproperties(x; fields=true, private)` is equivalent to `Base.propertynames(x, private)`
 """
-getproperties(x; fields=true, private=false) = Tuple(fields ? propertynames(x, private) : setdiff(propertynames(x, private), fieldnames(typeof(x))))
+getproperties(x; fields=true, private=false) = Tuple(setdiff(propertynames(x, private), fields ? () : fieldnames(typeof(x))))
 
 include("show.jl")
 include("dynamic.jl")
