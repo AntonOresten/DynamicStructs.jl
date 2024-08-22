@@ -66,7 +66,7 @@ Pkg.add("DynamicStructs")
 
 ## Implementation details
 
-The `@dynamic` macro adds a `_properties::OrderedCollections.OrderedDict{Symbol, Any}` field to the struct definition. The `Base.getproperty` and `Base.setproperty!` methods for the new type are defined to access this dictionary when the property being accessed is not a field.
+The `@dynamic` macro adds a `_dynamic_properties::OrderedCollections.OrderedDict{Symbol, Any}` field to the struct definition. The `Base.getproperty` and `Base.setproperty!` methods for the new type are defined to access this dictionary when the property being accessed is not a field.
 
 A `show` method for contexts like the REPL is defined to display the fields and dynamic properties of the new type in a nice and clear format.
 

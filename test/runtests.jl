@@ -45,7 +45,7 @@ using Test
         p.job = "Engineer"
         @test p.job == "Engineer"
         @test getproperties(p) == (:name, :age, :job)
-        @test getproperties(p, private=true) == (:name, :age, :_properties, :job)
+        @test getproperties(p, private=true) == (:name, :age, :_dynamic_properties, :job)
         @test getproperties(p, fields=false) == (:job,)
         @test getproperties(p, fields=false, private=true) == (:job,)
     end

@@ -1,8 +1,18 @@
-const PROPERTIES_FIELD = :_properties
+const PROPERTIES_FIELD = :_dynamic_properties
 
-isdynamictype(::Type{T}) where T = hasfield(T, PROPERTIES_FIELD)
-isdynamictype(x) = false
-isdynamic(x) = isdynamictype(typeof(x))
+"""
+    isdynamictype(T)
+
+Check if `T` is a dynamic type.
+"""
+isdynamictype(@nospecialize x) where T = x isa Type && hasfield(T, PROPERTIES_FIELD)
+
+"""
+    isdynamic(x)
+
+Check if `x` is an instance of a dynamic type.
+"""
+isdynamic(@nospecialize x) = isdynamictype(typeof(x))
 
 @inline property_dict(x) = getfield(x, PROPERTIES_FIELD)
 
