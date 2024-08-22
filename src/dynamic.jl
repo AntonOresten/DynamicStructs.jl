@@ -52,8 +52,6 @@ function deconstruct_field(f::Expr)
 end
 
 isfield(ex) = !isnothing(deconstruct_field(ex))
-isconstructor(_) = false
-isconstructor(ex::Expr) = ex.head in (:function, :(=))
 
 """
     @dynamic [mutable] struct ... end
