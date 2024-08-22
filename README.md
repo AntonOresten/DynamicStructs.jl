@@ -36,7 +36,7 @@ ship.fuel # ERROR: Spaceship instance has no field or property fuel
 
 - Create structs with both fields and dynamic properties using the `@dynamic` macro.
 - Use `mutable struct` to allow for modifying field values.
-- Full type safety for normal *fields*.
+- Type safety for *fields*.
 - Add, modify, and delete dynamic properties at runtime.
 - `@has` and `@del` macros to check for and delete dynamic properties.
 - Check if types and instances are dynamic with `isdynamictype` and `isdynamic`:
