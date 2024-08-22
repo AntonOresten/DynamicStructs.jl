@@ -8,6 +8,8 @@ DynamicStructs is a Julia package that allows you to create structs with dynamic
 
 ## Usage
 
+Install `DynamicStructs` from the REPL with `]add DynamicStructs`.
+
 ```julia
 using DynamicStructs
 
@@ -53,7 +55,7 @@ julia> getproperties(ship; fields=false)
 (:crew,)
 ```
 
-- Custom show method for pretty-printing:
+- Custom show method for pretty-printing (generalized to work with any type using `show_fields_properties(io, x)`):
 
 ```julia
 julia> ship
@@ -62,13 +64,6 @@ Spaceship:
     name::String = "Hail Mary"
   1 property:
     crew::Vector{String} = ["Grace"]
-```
-
-## Installation
-
-```julia
-using Pkg
-Pkg.add("DynamicStructs")
 ```
 
 ## Implementation details
