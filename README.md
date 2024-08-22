@@ -34,12 +34,19 @@ ship.fuel # ERROR: Spaceship instance has no field or property fuel
 
 ## Features
 
-- Create structs with both fields and dynamic properties using the `@dynamic` macro
-- Use `mutable struct` to allow for modifying field values
-- Full type safety for fields
-- Add, modify, and delete dynamic properties at runtime
-- `@has` and `@del` macros to check for and delete dynamic properties
-- Get a tuple of the current dynamic properties with `getproperties(ship; fields=false)`
+- Create structs with both fields and dynamic properties using the `@dynamic` macro.
+- Use `mutable struct` to allow for modifying field values.
+- Full type safety for normal *fields*.
+- Add, modify, and delete dynamic properties at runtime.
+- `@has` and `@del` macros to check for and delete dynamic properties.
+- Check if types and instances are dynamic with `isdynamictype` and `isdynamic`:
+
+```julia
+julia> (isdynamictype(Spaceship), isdynamic(ship), isdynamic(Spaceship))
+(true, true, false)
+```
+
+- Get a tuple of the current dynamic properties with `getproperties(ship; fields=false)`:
 
 ```julia
 julia> getproperties(ship; fields=false)
