@@ -42,7 +42,6 @@ macro has(expr)
     return esc(:(Base.hasproperty($x, $name)))
 end
 
-# returns (name, type) if a field, otherwise nothing
 _deconstruct_field(_) = nothing
 _deconstruct_field(f::Symbol) = f, :Any
 function _deconstruct_field(f::Expr)
@@ -138,7 +137,7 @@ macro dynamic(expr::Expr)
             Base.:(==)(x::$struct_name, y::$struct_name) = !any(name -> getfield(x, name) != getfield(y, name), fieldnames($struct_name))
 
             Base.show(io::IO, x::$struct_name) = $showdynamic(io, x)
-            Base.show(io::IO, ::MIME"text/plain", x::$struct_name) = $showdynamic_pretty(io, x)
+            Base.show(io::IO, ::MIME"text/plain", x::$struct_name) = $show_fields_properties(io, x)
         end))
         nothing
     end
