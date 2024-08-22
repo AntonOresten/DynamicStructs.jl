@@ -15,6 +15,15 @@ using Test
         @test p.sport == "Tennis"
     end
 
+    @testset "isdynamictype and isdynamic" begin
+        @test isdynamictype(Person)
+        @test !isdynamictype(Int)
+        @test !isdynamictype(Person("Sackarias", 16))
+        @test isdynamic(Person("Sackarias", 16))
+        @test !isdynamic(16)
+        @test !isdynamic(Person)
+    end
+
     @testset "Show" begin
         p = Person("Jacob", 19, instrument="guitar")
         str = sprint(show, p)

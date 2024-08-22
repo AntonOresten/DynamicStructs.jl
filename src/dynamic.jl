@@ -5,7 +5,7 @@ const PROPERTIES_FIELD = :_dynamic_properties
 
 Check if `T` is a dynamic type.
 """
-isdynamictype(@nospecialize x) where T = x isa Type && hasfield(T, PROPERTIES_FIELD)
+isdynamictype(@nospecialize T) = T isa Type && hasfield(T, PROPERTIES_FIELD)
 
 """
     isdynamic(x)
