@@ -90,6 +90,31 @@ using Test
         @test p.job == "Doctor"
     end
 
+    @testset "const field in mutable" begin
+        @dynamic mutable struct ConstPerson
+            const name::String
+        end
+
+        p = ConstPerson("Frank", age=50)
+        @test isdynamictype(ConstPerson)
+        @test isdynamic(p)
+        @test p.age == 50
+    end
+
+    @testset "Disordered definition" begin
+        @dynamic struct DisorderedPerson
+            name::String
+
+            DisorderedPerson() = DisorderedPerson("John", 25, job="Teacher")
+
+            age::Int
+        end
+
+        p = DisorderedPerson()
+        @test p == DisorderedPerson("John", 25, job="Teacher")
+        @test getproperties(p) == (:name, :age, :job)
+    end
+
     @testset "Generic Types" begin
         @dynamic struct GenericPerson{T}
             id::T

@@ -42,6 +42,19 @@ macro has(expr)
     return esc(:(Base.hasproperty($x, $name)))
 end
 
+# returns (name, type) if a field, otherwise nothing
+deconstruct_field(_) = nothing
+deconstruct_field(f::Symbol) = f, :Any
+function deconstruct_field(f::Expr)
+    f.head == :const && return deconstruct_field(f.args[1])
+    f.head == :(::) && return f.args[1], f.args[2]
+    return nothing
+end
+
+isfield(ex) = !isnothing(deconstruct_field(ex))
+isconstructor(_) = false
+isconstructor(ex::Expr) = ex.head in (:function, :(=))
+
 """
     @dynamic [mutable] struct ... end
 
@@ -83,18 +96,7 @@ macro dynamic(expr)
     get_type_param_name = tp -> tp isa Expr ? get_type_param_name(tp.args[1]) : tp
     type_param_names = [get_type_param_name(tp) for tp in type_params]
 
-    fields, field_types = [], []
-    for f in struct_body
-        if f isa Symbol
-            push!(fields, f)
-            push!(field_types, :Any)
-        elseif f isa Expr && f.head == :(::)
-            push!(fields, f.args[1])
-            push!(field_types, f.args[2])
-        elseif f isa Expr && f.head in (:function, :(=))
-            break
-        end
-    end
+    fields, field_types = zip([deconstruct_field(f) for f in struct_body if isfield(f)]...)
 
     constructor_args = [:($(fields[i])::$(field_types[i])) for i in eachindex(fields)]
     constructors = if isempty(type_param_names)
@@ -112,13 +114,8 @@ macro dynamic(expr)
         end
     end
 
-    insert_pos = findfirst(x -> x isa Expr && x.head in (:function, :(=)), struct_body)
-    insert_pos = isnothing(insert_pos) ? length(struct_body) + 1 : insert_pos
-    insert!(struct_body, insert_pos, :($PROPERTIES_FIELD::$OrderedDict{Symbol,Any}))
-
-    for (i, constructor) in enumerate(constructors.args)
-        insert!(struct_body, insert_pos + i, constructor)
-    end
+    push!(struct_body, :($PROPERTIES_FIELD::$OrderedDict{Symbol,Any}))
+    append!(struct_body, constructors.args)
 
     return quote
         $(esc(expr))
