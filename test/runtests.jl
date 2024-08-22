@@ -163,16 +163,7 @@ using Test
         p.job = "General"
         @test p.job == "General"
 
-        @testset "const field in mutable (julia ^1.8)" begin
-            @dynamic mutable struct ConstPerson
-                const name::String
-            end
-
-            p = ConstPerson("Ryan", age=45)
-            @test isdynamictype(ConstPerson)
-            @test isdynamic(p)
-            @test p.age == 45
-        end
+        @static VERSION ≥ v"1.8" && include("v1.8.jl")
     end
 
     @testset "Custom constructor" begin
