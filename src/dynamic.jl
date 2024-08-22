@@ -11,7 +11,7 @@ Delete the dynamic property `:name` from dynamic type `x`.
 Equivalent to `DynamicStructs.delproperty!(x, :name)`.
 """
 macro del(expr)
-    expr isa Expr && expr.head == :. || error()
+    expr isa Expr && expr.head == :. || throw(ArgumentError("Expression must be of the form `x.name`"))
     x, name = expr.args
     return esc(:($delproperty!($x, $name)))
 end
@@ -23,7 +23,7 @@ Check if `x` has a property `:name`.
 Equivalent to `Base.hasproperty(x, :name)`.
 """
 macro has(expr)
-    expr isa Expr && expr.head == :. || error()
+    expr isa Expr && expr.head == :. || throw(ArgumentError("Expression must be of the form `x.name`"))
     x, name = expr.args
     return esc(:(Base.hasproperty($x, $name)))
 end
@@ -71,9 +71,14 @@ macro dynamic(expr)
 
     fields, field_types = [], []
     for f in struct_body
-        if f isa Expr && f.head == :(::)
+        if f isa Symbol
+            push!(fields, f)
+            push!(field_types, :Any)
+        elseif f isa Expr && f.head == :(::)
             push!(fields, f.args[1])
             push!(field_types, f.args[2])
+        elseif f isa Expr && f.head in (:function, :(=))
+            break
         end
     end
 
@@ -94,9 +99,12 @@ macro dynamic(expr)
     end
 
     insert_pos = findfirst(x -> x isa Expr && x.head in (:function, :(=)), struct_body)
-    insert!(struct_body, isnothing(insert_pos) ? length(struct_body) + 1 : insert_pos, :($PROPERTIES_FIELD::$OrderedDict{Symbol,Any}))
+    insert_pos = isnothing(insert_pos) ? length(struct_body) + 1 : insert_pos
+    insert!(struct_body, insert_pos, :($PROPERTIES_FIELD::$OrderedDict{Symbol,Any}))
 
-    append!(struct_body, constructors.args)
+    for (i, constructor) in enumerate(constructors.args)
+        insert!(struct_body, insert_pos + i, constructor)
+    end
 
     return quote
         $(esc(expr))
@@ -120,7 +128,8 @@ macro dynamic(expr)
 
             Base.:(==)(x::$struct_name, y::$struct_name) = !any(name -> getfield(x, name) != getfield(y, name), fieldnames($struct_name))
 
-            Base.show(io::IO, ::MIME"text/plain", x::$struct_name) = $showdynamic(io, x)
+            Base.show(io::IO, x::$struct_name) = $showdynamic(io, x)
+            Base.show(io::IO, ::MIME"text/plain", x::$struct_name) = $showdynamic_pretty(io, x)
 
             $struct_name
         end))

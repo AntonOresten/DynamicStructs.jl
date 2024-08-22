@@ -17,8 +17,10 @@ using Test
 
     @testset "Show" begin
         p = Person("Jacob", 19, instrument="guitar")
-        str = sprint(show, MIME("text/plain"), p)
-        @test str == "Person:\n  2 fields:\n    name::String = \"Jacob\"\n    age::Int64 = 19\n  1 property:\n    instrument::String = \"guitar\""
+        str = sprint(show, p)
+        @test str == "Person(\"Jacob\", 19; instrument=\"guitar\")"
+        str_pretty = sprint(show, MIME("text/plain"), p)
+        @test str_pretty == "Person:\n  2 fields:\n    name::String = \"Jacob\"\n    age::Int64 = 19\n  1 property:\n    instrument::String = \"guitar\""
     end
 
     @testset "Hash" begin
@@ -65,6 +67,18 @@ using Test
     @testset "Error Handling" begin
         p = Person("David", 35)
         @test_throws ErrorException p.nonexistent
+    end
+
+    @testset "Untyped fields" begin
+        @dynamic struct UntypedPerson
+            name
+            age
+        end
+
+        p = UntypedPerson("Eva", 45, job="Doctor")
+        @test p.name == "Eva"
+        @test p.age == 45
+        @test p.job == "Doctor"
     end
 
     @testset "Generic Types" begin
