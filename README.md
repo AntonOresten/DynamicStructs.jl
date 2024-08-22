@@ -4,7 +4,7 @@
 [![Build Status](https://github.com/AntonOresten/DynamicStructs.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/AntonOresten/DynamicStructs.jl/actions/workflows/CI.yml?query=branch%3Amain)
 [![Coverage](https://codecov.io/gh/AntonOresten/DynamicStructs.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/AntonOresten/DynamicStructs.jl)
 
-DynamicStructs is a Julia package that allows you to create structs with dynamic properties. These properties behave like fields of type `Any` in mutable structs, but they are bound to the instance rather than the type, and can be added and deleted at runtime.
+DynamicStructs is a Julia package that allows you to create structs with dynamic properties. These properties behave similarly to fields of type `Any` in mutable structs, but are bound to the instance rather than the type, and can be added and deleted at runtime.
 
 ## Usage
 
