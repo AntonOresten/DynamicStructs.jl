@@ -3,6 +3,7 @@ module DynamicStructs
 using OrderedCollections: OrderedDict
 
 export getproperties
+export isdynamictype, isdynamic
 export @del, @has
 export @dynamic
 

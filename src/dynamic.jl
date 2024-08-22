@@ -1,5 +1,9 @@
 const PROPERTIES_FIELD = :_properties
 
+isdynamictype(::Type{T}) where T = hasfield(T, PROPERTIES_FIELD)
+isdynamictype(x) = false
+isdynamic(x) = isdynamictype(typeof(x))
+
 @inline property_dict(x) = getfield(x, PROPERTIES_FIELD)
 
 delproperty!(x, name::Symbol) = (delete!(property_dict(x), name); x)
