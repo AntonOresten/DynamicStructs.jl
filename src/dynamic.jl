@@ -43,15 +43,15 @@ macro has(expr)
 end
 
 # returns (name, type) if a field, otherwise nothing
-deconstruct_field(_) = nothing
-deconstruct_field(f::Symbol) = f, :Any
-function deconstruct_field(f::Expr)
-    f.head == :const && return deconstruct_field(f.args[1])
+_deconstruct_field(_) = nothing
+_deconstruct_field(f::Symbol) = f, :Any
+function _deconstruct_field(f::Expr)
+    f.head == :const && return _deconstruct_field(f.args[1])
     f.head == :(::) && return f.args[1], f.args[2]
     return nothing
 end
 
-isfield(ex) = !isnothing(deconstruct_field(ex))
+isfield(ex) = !isnothing(_deconstruct_field(ex))
 
 """
     @dynamic [mutable] struct ... end
@@ -82,8 +82,8 @@ ship.fuel # 20906.0
 ship.fuel # ERROR: Spaceship instance has no field or property fuel
 ```
 """
-macro dynamic(expr)
-    expr isa Expr && expr.head == :struct || error("`@dynamic` can only be applied to struct definitions")
+macro dynamic(expr::Expr)
+    expr.head == :struct || error("`@dynamic` can only be applied to struct definitions")
 
     struct_def = expr.args[2]
     struct_body = expr.args[3].args
@@ -94,7 +94,7 @@ macro dynamic(expr)
     get_type_param_name = tp -> tp isa Expr ? get_type_param_name(tp.args[1]) : tp
     type_param_names = [get_type_param_name(tp) for tp in type_params]
 
-    fields, field_types = zip([deconstruct_field(f) for f in struct_body if isfield(f)]...)
+    fields, field_types = zip([_deconstruct_field(f) for f in struct_body if isfield(f)]...)
 
     constructor_args = [:($(fields[i])::$(field_types[i])) for i in eachindex(fields)]
     constructors = if isempty(type_param_names)

@@ -163,15 +163,15 @@ using Test
         p.job = "General"
         @test p.job == "General"
 
-        @static VERSION ≥ v"1.8.0" && @testset "const field in mutable (julia ^1.8)" begin
+        @testset "const field in mutable (julia ^1.8)" begin
             @dynamic mutable struct ConstPerson
                 const name::String
             end
 
-            p = ConstPerson("Frank", age=50)
+            p = ConstPerson("Ryan", age=45)
             @test isdynamictype(ConstPerson)
             @test isdynamic(p)
-            @test p.age == 50
+            @test p.age == 45
         end
     end
 
