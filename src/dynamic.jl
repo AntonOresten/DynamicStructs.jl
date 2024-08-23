@@ -27,7 +27,7 @@ Equivalent to `DynamicStructs.delproperty!(x, :name)`.
 macro del(expr)
     expr isa Expr && expr.head == :. || throw(ArgumentError("Expression must be of the form `x.name`"))
     x, name = expr.args
-    return esc(:($delproperty!($x, $name)))
+    return :(delproperty!($(esc(x)), $(esc(name))))
 end
 
 """
@@ -39,7 +39,7 @@ Equivalent to `Base.hasproperty(x, :name)`.
 macro has(expr)
     expr isa Expr && expr.head == :. || throw(ArgumentError("Expression must be of the form `x.name`"))
     x, name = expr.args
-    return esc(:(Base.hasproperty($x, $name)))
+    return :(Base.hasproperty($(esc(x)), $(esc(name))))
 end
 
 _deconstruct_field(_) = nothing
@@ -50,7 +50,7 @@ function _deconstruct_field(f::Expr)
     return nothing
 end
 
-isfield(ex) = !isnothing(_deconstruct_field(ex))
+_isfield(ex) = !isnothing(_deconstruct_field(ex))
 
 """
     @dynamic [mutable] struct ... end
@@ -87,23 +87,25 @@ macro dynamic(expr::Expr)
     struct_def = expr.args[2]
     struct_body = expr.args[3].args
 
-    struct_type, supertype = struct_def isa Expr && struct_def.head == :(<:) ? struct_def.args : (struct_def, :Any)
-    struct_name, type_params = struct_type isa Expr && struct_type.head == :curly ? (struct_type.args[1], struct_type.args[2:end]) : (struct_type, [])
+    struct_type, supertype = struct_def isa Expr && struct_def.head == :(<:) ?
+        struct_def.args : (struct_def, :Any)
+    struct_name, type_params = struct_type isa Expr && struct_type.head == :curly ?
+        (struct_type.args[1], struct_type.args[2:end]) : (struct_type, [])
 
     get_type_param_name = tp -> tp isa Expr ? get_type_param_name(tp.args[1]) : tp
     type_param_names = [get_type_param_name(tp) for tp in type_params]
 
-    fields, field_types = zip([_deconstruct_field(f) for f in struct_body if isfield(f)]...)
+    fields, field_types = zip([_deconstruct_field(f) for f in struct_body if _isfield(f)]...)
 
-    constructor_args = [:($(fields[i])::$(field_types[i])) for i in eachindex(fields)]
+    field_type_asserts = [Expr(:(::), f, ft) for (f, ft) in zip(fields, field_types)]
     constructors = if isempty(type_param_names)
         quote
-            $struct_name($(constructor_args...); kwargs...) =
+            $struct_name($(field_type_asserts...); kwargs...) =
                 new($(fields...), $OrderedDict{Symbol,Any}(kwargs...))
         end
     else
         quote
-            $struct_name($(constructor_args...); kwargs...) where {$(type_param_names...)} =
+            $struct_name($(field_type_asserts...); kwargs...) where {$(type_param_names...)} =
                 new{$(type_param_names...)}($(fields...), $OrderedDict{Symbol,Any}(kwargs...))
                 
             $struct_name{$(type_param_names...)}($(fields...); kwargs...) where {$(type_param_names...)} =
@@ -116,29 +118,35 @@ macro dynamic(expr::Expr)
 
     return quote
         $(esc(expr))
-        $(esc(quote
-            Base.propertynames(x::$struct_name, private::Bool=false) =
-                ((private ? fieldnames(typeof(x)) : fieldnames(typeof(x))[1:end-1])..., keys($property_dict(x))...)
 
-            function Base.getproperty(x::$struct_name, name::Symbol)
-                hasfield(typeof(x), name) && return getfield(x, name)
-                name in keys($property_dict(x)) && return $property_dict(x)[name]
-                throw(ErrorException("$(typeof(x)) instance has no field or property $name"))
-            end
+        function Base.propertynames(x::$(esc(struct_name)), private::Bool=false)
+            fields = private ? fieldnames(typeof(x)) : fieldnames(typeof(x))[1:end-1]
+            fields..., keys(property_dict(x))...
+        end
 
-            function Base.setproperty!(x::$struct_name, name::Symbol, value)
-                hasfield(typeof(x), name) && return setfield!(x, name, value)
-                return setindex!($property_dict(x), value, name)
-            end
+        function Base.getproperty(x::$(esc(struct_name)), name::Symbol)
+            hasfield(typeof(x), name) && return getfield(x, name)
+            name in keys(property_dict(x)) && return @inbounds getindex(property_dict(x), name)
+            throw(ArgumentError("$(typeof(x)) instance has no field or property $name"))
+        end
 
-            Base.hash(x::$struct_name, h::UInt) =
-                hash($struct_name, foldr(hash, getfield(x, fieldname) for fieldname in fieldnames($struct_name); init=h))
+        function Base.setproperty!(x::$(esc(struct_name)), name::Symbol, value)
+            hasfield(typeof(x), name) && return setfield!(x, name, value)
+            setindex!(property_dict(x), value, name)
+        end
 
-            Base.:(==)(x::$struct_name, y::$struct_name) = !any(name -> getfield(x, name) != getfield(y, name), fieldnames($struct_name))
+        function Base.hash(x::$(esc(struct_name)), h::UInt)
+            field_hash = foldr(hash, getfield(x, fieldname) for fieldname in fieldnames(typeof(x)); init=h)
+            hash(typeof(x), field_hash)
+        end
 
-            Base.show(io::IO, x::$struct_name) = $showdynamic(io, x)
-            Base.show(io::IO, ::MIME"text/plain", x::$struct_name) = $show_fields_properties(io, x)
-        end))
+        function Base.:(==)(x::$(esc(struct_name)), y::$(esc(struct_name)))
+            !any(name -> getfield(x, name) != getfield(y, name), fieldnames(typeof(x)))
+        end
+
+        Base.show(io::IO, x::$(esc(struct_name))) = showdynamic(io, x)
+        Base.show(io::IO, ::MIME"text/plain", x::$(esc(struct_name))) = show_fields_properties(io, x)
+
         nothing
     end
 end
