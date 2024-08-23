@@ -1,11 +1,11 @@
-const PROPERTIES_FIELD = :_dynamic_properties
+const DYNAMIC_PROPERTIES_FIELD_NAME = :_dynamic_properties
 
 """
     isdynamictype(T)
 
 Check if `T` is a dynamic type.
 """
-isdynamictype(@nospecialize T) = T isa Type && hasfield(T, PROPERTIES_FIELD)
+isdynamictype(@nospecialize T) = T isa Type && hasfield(T, DYNAMIC_PROPERTIES_FIELD_NAME)
 
 """
     isdynamic(x)
@@ -14,7 +14,7 @@ Check if `x` is an instance of a dynamic type.
 """
 isdynamic(@nospecialize x) = isdynamictype(typeof(x))
 
-@inline property_dict(x) = getfield(x, PROPERTIES_FIELD)
+@inline property_dict(x) = getfield(x, DYNAMIC_PROPERTIES_FIELD_NAME)
 
 delproperty!(x, name::Symbol) = (delete!(property_dict(x), name); x)
 
@@ -24,10 +24,10 @@ delproperty!(x, name::Symbol) = (delete!(property_dict(x), name); x)
 Delete the dynamic property `:name` from dynamic type `x`. 
 Equivalent to `DynamicStructs.delproperty!(x, :name)`.
 """
-macro del(expr)
+macro del(expr::Expr)
     expr isa Expr && expr.head == :. || throw(ArgumentError("Expression must be of the form `x.name`"))
     x, name = expr.args
-    return :(delproperty!($(esc(x)), $(esc(name))))
+    return :(delproperty!($(esc(x)), $name))
 end
 
 """
@@ -36,10 +36,10 @@ end
 Check if `x` has a property `:name`.
 Equivalent to `Base.hasproperty(x, :name)`.
 """
-macro has(expr)
+macro has(expr::Expr)
     expr isa Expr && expr.head == :. || throw(ArgumentError("Expression must be of the form `x.name`"))
     x, name = expr.args
-    return :(Base.hasproperty($(esc(x)), $(esc(name))))
+    return :(Base.hasproperty($(esc(x)), $name))
 end
 
 _deconstruct_field(_) = nothing
@@ -113,7 +113,7 @@ macro dynamic(expr::Expr)
         end
     end
 
-    push!(struct_body, :($PROPERTIES_FIELD::$OrderedDict{Symbol,Any}))
+    push!(struct_body, :($DYNAMIC_PROPERTIES_FIELD_NAME::$OrderedDict{Symbol,Any}))
     append!(struct_body, constructors.args)
 
     return quote

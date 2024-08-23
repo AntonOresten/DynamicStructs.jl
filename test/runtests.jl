@@ -137,11 +137,9 @@ using Test
         p = ImmutablePerson("Frank", age=50)
         @test p.name == "Frank"
         @test p.age == 50
-        
-        # Test that we can't modify the name field
+
         @test_throws ErrorException p.name = "George"
-        
-        # But we can still add new properties
+
         p.job = "Teacher"
         @test p.job == "Teacher"
     end
@@ -154,16 +152,14 @@ using Test
         p = MutablePerson("Franco", age=35)
         @test p.name == "Franco"
         @test p.age == 35
-        
-        # We can modify the name field
+
         p.name = "Francisco"
         @test p.name == "Francisco"
-        
-        # as well as add new properties
+
         p.job = "General"
         @test p.job == "General"
 
-        @static VERSION ≥ v"1.8" && include("v1.8.jl")
+        VERSION ≥ v"1.8" && include("const-field.jl")
     end
 
     @testset "Custom constructor" begin

@@ -9,6 +9,7 @@
         @test isdynamictype(ConstPerson)
         @test isdynamic(p)
         @test p.age == 45
+        @test_throws ErrorException p.name = "Rory"
     end
 
 end
