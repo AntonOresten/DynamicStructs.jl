@@ -118,10 +118,19 @@ macro dynamic(expr::Expr)
 
     return quote
         $(esc(expr))
-
-        function Base.propertynames(x::$(esc(struct_name)), private::Bool=false)
-            fields = private ? fieldnames(typeof(x)) : fieldnames(typeof(x))[1:end-1]
-            fields..., keys(property_dict(x))...
+        function Base.propertynames(x::$struct_name)
+            if isempty($property_dict(x)) 
+                fieldnames(typeof(x))[1:end-1]
+            else
+                (fieldnames(typeof(x))[1:end-1]..., keys($property_dict(x))...)
+            end
+        end
+        function Base.propertynames(x::$struct_name, private::Bool)
+            if private
+                (fieldnames(typeof(x))..., keys($property_dict(x))...)
+            else
+                Base.propertynames(x)
+            end
         end
 
         function Base.getproperty(x::$(esc(struct_name)), name::Symbol)
