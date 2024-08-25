@@ -1,4 +1,18 @@
+
+
+mutable struct DYNAMIC_PROPERTIES
+    dict::OrderedDict{Symbol, Any}
+    function DYNAMIC_PROPERTIES(; kwargs...)
+        isempty(kwargs) && return new()
+        return new(OrderedDict{Symbol,Any}(kwargs...))
+    end
+end
+
 const DYNAMIC_PROPERTIES_FIELD_NAME = :_dynamic_properties
+
+is_property_dict(x) = isdefined(getfield(x, DYNAMIC_PROPERTIES_FIELD_NAME), :dict)
+is_empty_property_dict(x) = !is_property_dict(x) || isempty(property_dict(x))
+set_property_dict(x) = setfield!(getfield(x, DYNAMIC_PROPERTIES_FIELD_NAME), :dict, OrderedDict{Symbol,Any}())
 
 """
     isdynamictype(T)
@@ -14,7 +28,7 @@ Check if `x` is an instance of a dynamic type.
 """
 isdynamic(@nospecialize x) = isdynamictype(typeof(x))
 
-@inline property_dict(x) = getfield(x, DYNAMIC_PROPERTIES_FIELD_NAME)
+@inline property_dict(x) = getfield(x, DYNAMIC_PROPERTIES_FIELD_NAME).dict
 
 delproperty!(x, name::Symbol) = (delete!(property_dict(x), name); x)
 
@@ -101,51 +115,56 @@ macro dynamic(expr::Expr)
     constructors = if isempty(type_param_names)
         quote
             $struct_name($(field_type_asserts...); kwargs...) =
-                new($(fields...), $OrderedDict{Symbol,Any}(kwargs...))
+                new($(fields...), $DYNAMIC_PROPERTIES(; kwargs...))
         end
     else
         quote
             $struct_name($(field_type_asserts...); kwargs...) where {$(type_param_names...)} =
-                new{$(type_param_names...)}($(fields...), $OrderedDict{Symbol,Any}(kwargs...))
+                new{$(type_param_names...)}($(fields...), $DYNAMIC_PROPERTIES(; kwargs...))
                 
             $struct_name{$(type_param_names...)}($(fields...); kwargs...) where {$(type_param_names...)} =
-                new{$(type_param_names...)}($(fields...), $OrderedDict{Symbol,Any}(kwargs...))
+                new{$(type_param_names...)}($(fields...), $DYNAMIC_PROPERTIES(; kwargs...))
         end
     end
 
-    push!(struct_body, :($DYNAMIC_PROPERTIES_FIELD_NAME::$OrderedDict{Symbol,Any}))
+    push!(struct_body, :($DYNAMIC_PROPERTIES_FIELD_NAME::$DYNAMIC_PROPERTIES))
     append!(struct_body, constructors.args)
 
     return quote
         $(esc(expr))
 
         function Base.propertynames(x::$(esc(struct_name)))
-            isempty(property_dict(x)) && return fieldnames(typeof(x))[1:end-1]
+            is_empty_property_dict(x) && return fieldnames(typeof(x))[1:end-1]
             (fieldnames(typeof(x))[1:end-1]..., keys(property_dict(x))...)
         end
 
         function Base.propertynames(x::$(esc(struct_name)), private::Bool)
+            private && is_empty_property_dict(x) && return fieldnames(typeof(x))
             private && return (fieldnames(typeof(x))..., keys(property_dict(x))...)
             Base.propertynames(x)
         end
 
         function Base.getproperty(x::$(esc(struct_name)), name::Symbol)
             hasfield(typeof(x), name) && return getfield(x, name)
-            name in keys(property_dict(x)) && return @inbounds getindex(property_dict(x), name)
+            is_property_dict(x) && name in keys(property_dict(x)) && return @inbounds getindex(property_dict(x), name)
             throw(ErrorException("$(typeof(x)) instance has no field or property $name"))
         end
 
         function Base.setproperty!(x::$(esc(struct_name)), name::Symbol, value)
             hasfield(typeof(x), name) && return setfield!(x, name, value)
+            !is_property_dict(x) && set_property_dict(x)
             setindex!(property_dict(x), value, name)
         end
 
         function Base.hash(x::$(esc(struct_name)), h::UInt)
+            !is_property_dict(x) && set_property_dict(x)
             field_hash = foldr(hash, getfield(x, fieldname) for fieldname in fieldnames(typeof(x)); init=h)
             hash(typeof(x), field_hash)
         end
 
         function Base.:(==)(x::$(esc(struct_name)), y::$(esc(struct_name)))
+            !is_property_dict(x) && set_property_dict(x)
+            !is_property_dict(y) && set_property_dict(y)
             !any(name -> getfield(x, name) != getfield(y, name), fieldnames(typeof(x)))
         end
 
