@@ -1,6 +1,6 @@
 module DynamicStructs
 
-using OrderedCollections: OrderedDict
+using OrderedCollections
 
 export getproperties
 export isdynamictype, isdynamic
