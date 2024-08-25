@@ -1,7 +1,7 @@
 name = "DynamicStructs"
 uuid = "e139c391-eeee-4818-b359-c8725224fb1f"
 authors = ["Anton Oresten <anton.oresten42@gmail.com> and contributors"]
-version = "0.1.0"
+version = "0.1.1"
 
 [deps]
 OrderedCollections = "bac558e1-5e72-5ebc-8fee-abe8a469f55d"
