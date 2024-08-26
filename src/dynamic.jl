@@ -1,3 +1,11 @@
+
+# The `@dynamic` macro adds a field of type `DynamicProperties` to the struct definition, which lazily
+# wraps a `OrderedCollections.LittleDict{Symbol, Any, Vector{Symbol}, Vector{Any}}` to avoid unnecessary
+# memory use when properties are yet to be added. The `Base.getproperty` and `Base.setproperty!` methods
+# for the new type are defined to access this dictionary when the property being accessed is not a field.
+# A `show` method for contexts like the REPL is defined to display the fields and dynamic properties of
+# the new type in a nice and clear format.
+
 mutable struct DynamicProperties
     dict::LittleDict{Symbol,Any,Vector{Symbol},Vector{Any}}
     DynamicProperties(; kwargs...) = isempty(kwargs) ? new() : new(LittleDict{Symbol,Any}(kwargs...))
