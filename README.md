@@ -28,15 +28,10 @@ ship.fuel = 20906.0 # assign fuel
 ship.crew # ["Grace"]
 ship.fuel # 20906.0
 
-# Convenience macros
-
-@has ship.fuel # true
-@del! ship.fuel # delete fuel
-@has ship.fuel # false
+hasproperty(ship, :fuel) # true
+delete!(ship, :fuel) # delete fuel
+hasproperty(ship, :fuel) # false
 ship.fuel # ERROR: Spaceship instance has no field or property fuel
-@get ship.fuel nothing # defaults to nothing
-@get! ship.fuel 0.0 # returns 0.0, sets ship.fuel to 0.0
-ship.fuel # 0.0
 ```
 
 ## Features
@@ -44,11 +39,7 @@ ship.fuel # 0.0
 - Create structs with both fields and dynamic properties using the `@dynamic` macro.
 - Use `mutable struct` to allow for modifying field values.
 - Type safety for *fields*.
-- Add, modify, and delete dynamic properties at runtime, with macros for convenience:
-  - `@has` macro to check if a field or property exists.
-  - `@del!` macro to delete a dynamic property if it exists.
-  - `@get` macro to get a dynamic property or return a default value.
-  - `@get!` macro to get a dynamic property or return a default value and set it if it doesn't exist.
+- Add, modify, and delete dynamic properties at runtime.
 - Check if types and instances are dynamic with `isdynamictype` and `isdynamic`:
 
 ```julia

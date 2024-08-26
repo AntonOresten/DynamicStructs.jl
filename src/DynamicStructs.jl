@@ -1,13 +1,10 @@
 module DynamicStructs
 
-using OrderedCollections
+using OrderedCollections: LittleDict
 
 export getproperties
 export isdynamictype, isdynamic
-export @has, @get, @get!, @del!
 export @dynamic
-
-@deprecate var"@del" var"@del!"
 
 """
     getproperties(x; fields=true, private=false)
@@ -19,5 +16,6 @@ getproperties(x; fields=true, private=false) = Tuple(setdiff(propertynames(x, pr
 
 include("show.jl")
 include("dynamic.jl")
+include("deprecated.jl")
 
 end

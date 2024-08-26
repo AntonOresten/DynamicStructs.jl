@@ -66,6 +66,14 @@ using Test
         @test p.hobby == "reading"
     end
 
+    @testset "Base.delete!" begin
+        p = Person("Elizabeth", 96)
+        p.job = "Retired"
+        @test delete!(p, :job) == p
+        @test !hasproperty(p, :job)
+    end
+
+    # Deprecated
     @testset "Convenience macros" begin
         p = Person("Charlie", 40, temporary=true)
         @test (@get p.name "noname") == "Charlie"
@@ -76,7 +84,6 @@ using Test
         @test !@has p.temporary
         @test (@get p.temporary false) == false
 
-        # Deprecated
         @test @isdefined var"@del"
     end
 

@@ -34,73 +34,15 @@ Check if `x` is an instance of a dynamic type.
 """
 isdynamic(@nospecialize x) = isdynamictype(typeof(x))
 
-"""
-    @has x.name
-
-Check if `x` has a property `:name`.
-Equivalent to `Base.hasproperty(x, :name)`.
-"""
-macro has(expr::Expr)
-    expr isa Expr && expr.head == :. || throw(ArgumentError("Expression must be of the form `x.name`"))
-    x, name = expr.args
-    return :(Base.hasproperty($(esc(x)), $name))
-end
-
-"""
-    @get x.name default
-
-Get the value of the property `:name` of `x`, or `default` if `x` has no such property.
-Meant to act like the `get` function for collections.
-Equivalent to `(@has x.name) ? x.name : default`.
-"""
-macro get(expr::Expr, default)
-    expr isa Expr && expr.head == :. || throw(ArgumentError("Expression must be of the form `x.name`"))
-    x, name = expr.args
-    return :(Base.hasproperty($(esc(x)), $(esc(name))) ? $(esc(expr)) : $(esc(default)))
-end
-
-"""
-    @get! x.name default
-
-Get the value of the property `:name` of `x`, or `default` if `x` has no such property,
-and set the property to `default`.
-"""
-macro get!(expr::Expr, default)
-    expr isa Expr && expr.head == :. || throw(ArgumentError("Expression must be of the form `x.name`"))
-    x, name = expr.args
-    return quote
-        if Base.hasproperty($(esc(x)), $(esc(name)))
-            $(esc(expr))
-        else
-            Base.setproperty!($(esc(x)), $(esc(name)), $(esc(default)))
-            $(esc(default))
-        end
-    end
-end
-
-delproperty!(x, name::Symbol) = (delete!(property_dict(x), name); x)
-
-"""
-    @del! x.name
-
-Delete the dynamic property `:name` from dynamic type `x`. 
-Equivalent to `DynamicStructs.delproperty!(x, :name)`.
-"""
-macro del!(expr::Expr)
-    expr isa Expr && expr.head == :. || throw(ArgumentError("Expression must be of the form `x.name`"))
-    x, name = expr.args
-    return :(delproperty!($(esc(x)), $name))
-end
-
-_deconstruct_field(_) = nothing
-_deconstruct_field(f::Symbol) = f, :Any
-function _deconstruct_field(f::Expr)
-    f.head == :const && return _deconstruct_field(f.args[1])
+deconstruct_field(_) = nothing
+deconstruct_field(f::Symbol) = f, :Any
+function deconstruct_field(f::Expr)
+    f.head == :const && return deconstruct_field(f.args[1])
     f.head == :(::) && return f.args[1], f.args[2]
     return nothing
 end
 
-_isfield(ex) = !isnothing(_deconstruct_field(ex))
+isfield(ex) = !isnothing(deconstruct_field(ex))
 
 not_found_error(x, name) = throw(ErrorException("$(typeof(x)) instance has no field or property $name"))
 
@@ -147,7 +89,7 @@ macro dynamic(expr::Expr)
     get_type_param_name = tp -> tp isa Expr ? get_type_param_name(tp.args[1]) : tp
     type_param_names = [get_type_param_name(tp) for tp in type_params]
 
-    fields, field_types = zip([_deconstruct_field(f) for f in struct_body if _isfield(f)]...)
+    fields, field_types = zip([deconstruct_field(f) for f in struct_body if isfield(f)]...)
 
     field_type_asserts = [Expr(:(::), f, ft) for (f, ft) in zip(fields, field_types)]
     constructors = if isempty(type_param_names)
@@ -192,6 +134,11 @@ macro dynamic(expr::Expr)
             hasfield(typeof(x), name) && return setfield!(x, name, value)
             !is_property_dict_instantiated(x) && instantiate_property_dict!(x)
             setindex!(property_dict(x), value, name)
+        end
+
+        function Base.delete!(x::$(esc(struct_name)), name::Symbol)
+            is_property_dict_instantiated(x) && delete!(property_dict(x), name)
+            x
         end
 
         function Base.hash(x::$(esc(struct_name)), h::UInt)
