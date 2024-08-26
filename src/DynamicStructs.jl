@@ -4,8 +4,10 @@ using OrderedCollections
 
 export getproperties
 export isdynamictype, isdynamic
-export @del, @has
+export @has, @get, @get!, @del!
 export @dynamic
+
+@deprecate var"@del" var"@del!"
 
 """
     getproperties(x; fields=true, private=false)

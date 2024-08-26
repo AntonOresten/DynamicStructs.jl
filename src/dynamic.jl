@@ -34,20 +34,6 @@ Check if `x` is an instance of a dynamic type.
 """
 isdynamic(@nospecialize x) = isdynamictype(typeof(x))
 
-delproperty!(x, name::Symbol) = (delete!(property_dict(x), name); x)
-
-"""
-    @del x.name
-
-Delete the dynamic property `:name` from dynamic type `x`. 
-Equivalent to `DynamicStructs.delproperty!(x, :name)`.
-"""
-macro del(expr::Expr)
-    expr isa Expr && expr.head == :. || throw(ArgumentError("Expression must be of the form `x.name`"))
-    x, name = expr.args
-    return :(delproperty!($(esc(x)), $name))
-end
-
 """
     @has x.name
 
@@ -58,6 +44,44 @@ macro has(expr::Expr)
     expr isa Expr && expr.head == :. || throw(ArgumentError("Expression must be of the form `x.name`"))
     x, name = expr.args
     return :(Base.hasproperty($(esc(x)), $name))
+end
+
+"""
+    @get x.name default
+
+Get the value of the property `:name` of `x`, or `default` if `x` has no such property.
+Meant to act like the `get` function for collections.
+Equivalent to `(@has x.name) ? x.name : default`.
+"""
+macro get(expr::Expr, default)
+    expr isa Expr && expr.head == :. || throw(ArgumentError("Expression must be of the form `x.name`"))
+    x, name = expr.args
+    return :(get(property_dict($(esc(x))), $name, $(esc(default))))
+end
+
+"""
+    @get! x.name default
+
+Get the value of the property `:name` of `x`, or `default` if `x` has no such property.
+"""
+macro get!(expr::Expr, default)
+    expr isa Expr && expr.head == :. || throw(ArgumentError("Expression must be of the form `x.name`"))
+    x, name = expr.args
+    return :(get!(property_dict($(esc(x))), $name, $(esc(default))))
+end
+
+delproperty!(x, name::Symbol) = (delete!(property_dict(x), name); x)
+
+"""
+    @del! x.name
+
+Delete the dynamic property `:name` from dynamic type `x`. 
+Equivalent to `DynamicStructs.delproperty!(x, :name)`.
+"""
+macro del!(expr::Expr)
+    expr isa Expr && expr.head == :. || throw(ArgumentError("Expression must be of the form `x.name`"))
+    x, name = expr.args
+    return :(delproperty!($(esc(x)), $name))
 end
 
 _deconstruct_field(_) = nothing
@@ -96,7 +120,7 @@ ship.crew # ["Grace"]
 ship.fuel # 20906.0
 
 @has ship.fuel # true
-@del ship.fuel # delete fuel
+@del! ship.fuel # delete fuel
 @has ship.fuel # false
 ship.fuel # ERROR: Spaceship instance has no field or property fuel
 ```

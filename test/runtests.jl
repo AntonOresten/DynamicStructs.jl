@@ -66,11 +66,16 @@ using Test
         @test p.hobby == "reading"
     end
 
-    @testset "Deletion" begin
+    @testset "Convenience macros" begin
         p = Person("Charlie", 40, temporary=true)
         @test @has p.temporary
-        @del p.temporary
+        @test (@get p.temporary false) == true
+        @del! p.temporary
         @test !@has p.temporary
+        @test (@get p.temporary false) == false
+
+        # Deprecated
+        @test @isdefined var"@del"
     end
 
     @testset "Error Handling" begin
