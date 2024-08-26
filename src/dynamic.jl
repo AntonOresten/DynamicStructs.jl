@@ -1,5 +1,5 @@
 mutable struct DynamicProperties
-    dict::LittleDict{Symbol,Any}
+    dict::LittleDict{Symbol,Any,Vector{Symbol},Vector{Any}}
     DynamicProperties(; kwargs...) = isempty(kwargs) ? new() : new(LittleDict{Symbol,Any}(kwargs...))
 end
 
