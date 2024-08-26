@@ -52,6 +52,8 @@ end
 
 _isfield(ex) = !isnothing(_deconstruct_field(ex))
 
+not_found_error(x, name) = throw(ErrorException("$(typeof(x)) instance has no field or property $name"))
+
 """
     @dynamic [mutable] struct ... end
 
@@ -131,8 +133,7 @@ macro dynamic(expr::Expr)
 
         function Base.getproperty(x::$(esc(struct_name)), name::Symbol)
             hasfield(typeof(x), name) && return getfield(x, name)
-            name in keys(property_dict(x)) && return @inbounds getindex(property_dict(x), name)
-            throw(ErrorException("$(typeof(x)) instance has no field or property $name"))
+            is_property_dict_instantiated(x) && get(() -> not_found_error(x, name), property_dict(x), name)
         end
 
         function Base.setproperty!(x::$(esc(struct_name)), name::Symbol, value)
