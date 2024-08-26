@@ -56,18 +56,26 @@ Equivalent to `(@has x.name) ? x.name : default`.
 macro get(expr::Expr, default)
     expr isa Expr && expr.head == :. || throw(ArgumentError("Expression must be of the form `x.name`"))
     x, name = expr.args
-    return :(get(property_dict($(esc(x))), $name, $(esc(default))))
+    return :(Base.hasproperty($(esc(x)), $(esc(name))) ? $(esc(expr)) : $(esc(default)))
 end
 
 """
     @get! x.name default
 
-Get the value of the property `:name` of `x`, or `default` if `x` has no such property.
+Get the value of the property `:name` of `x`, or `default` if `x` has no such property,
+and set the property to `default`.
 """
 macro get!(expr::Expr, default)
     expr isa Expr && expr.head == :. || throw(ArgumentError("Expression must be of the form `x.name`"))
     x, name = expr.args
-    return :(get!(property_dict($(esc(x))), $name, $(esc(default))))
+    return quote
+        if Base.hasproperty($(esc(x)), $(esc(name)))
+            $(esc(expr))
+        else
+            Base.setproperty!($(esc(x)), $(esc(name)), $(esc(default)))
+            $(esc(default))
+        end
+    end
 end
 
 delproperty!(x, name::Symbol) = (delete!(property_dict(x), name); x)

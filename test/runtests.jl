@@ -68,6 +68,8 @@ using Test
 
     @testset "Convenience macros" begin
         p = Person("Charlie", 40, temporary=true)
+        @test (@get p.name "noname") == "Charlie"
+        @test (@get p.nickname "nonickname") == "nonickname" 
         @test @has p.temporary
         @test (@get p.temporary false) == true
         @del! p.temporary
