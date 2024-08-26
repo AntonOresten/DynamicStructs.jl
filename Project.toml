@@ -1,14 +1,14 @@
 name = "DynamicStructs"
 uuid = "e139c391-eeee-4818-b359-c8725224fb1f"
 authors = ["Anton Oresten <anton.oresten42@gmail.com> and contributors"]
-version = "0.1.1"
+version = "0.1.2"
 
 [deps]
 OrderedCollections = "bac558e1-5e72-5ebc-8fee-abe8a469f55d"
 
 [compat]
 OrderedCollections = "1"
-julia = "^1.6"
+julia = "1.6"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
