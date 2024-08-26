@@ -1,4 +1,24 @@
+
+# The `@dynamic` macro adds a field of type `DynamicProperties` to the struct definition, which lazily
+# wraps a `OrderedCollections.LittleDict{Symbol, Any, Vector{Symbol}, Vector{Any}}` to avoid unnecessary
+# memory use when properties are yet to be added. The `Base.getproperty` and `Base.setproperty!` methods
+# for the new type are defined to access this dictionary when the property being accessed is not a field.
+# A `show` method for contexts like the REPL is defined to display the fields and dynamic properties of
+# the new type in a nice and clear format.
+
+mutable struct DynamicProperties
+    dict::LittleDict{Symbol,Any,Vector{Symbol},Vector{Any}}
+    DynamicProperties(; kwargs...) = isempty(kwargs) ? new() : new(LittleDict{Symbol,Any}(kwargs...))
+end
+
 const DYNAMIC_PROPERTIES_FIELD_NAME = :_dynamic_properties
+
+@inline dynamic_properties(x)::DynamicProperties = getfield(x, DYNAMIC_PROPERTIES_FIELD_NAME)
+@inline property_dict(x) = getfield(dynamic_properties(x), :dict)
+
+is_property_dict_instantiated(x) = isdefined(dynamic_properties(x), :dict)
+is_property_dict_empty(x) = !is_property_dict_instantiated(x) || isempty(property_dict(x))
+instantiate_property_dict!(x) = setfield!(dynamic_properties(x), :dict, LittleDict{Symbol,Any}())
 
 """
     isdynamictype(T)
@@ -13,8 +33,6 @@ isdynamictype(@nospecialize T) = T isa Type && hasfield(T, DYNAMIC_PROPERTIES_FI
 Check if `x` is an instance of a dynamic type.
 """
 isdynamic(@nospecialize x) = isdynamictype(typeof(x))
-
-@inline property_dict(x) = getfield(x, DYNAMIC_PROPERTIES_FIELD_NAME)
 
 delproperty!(x, name::Symbol) = (delete!(property_dict(x), name); x)
 
@@ -103,31 +121,32 @@ macro dynamic(expr::Expr)
     constructors = if isempty(type_param_names)
         quote
             $struct_name($(field_type_asserts...); kwargs...) =
-                new($(fields...), $OrderedDict{Symbol,Any}(kwargs...))
+                new($(fields...), $DynamicProperties(; kwargs...))
         end
     else
         quote
             $struct_name($(field_type_asserts...); kwargs...) where {$(type_param_names...)} =
-                new{$(type_param_names...)}($(fields...), $OrderedDict{Symbol,Any}(kwargs...))
+                new{$(type_param_names...)}($(fields...), $DynamicProperties(; kwargs...))
                 
             $struct_name{$(type_param_names...)}($(fields...); kwargs...) where {$(type_param_names...)} =
-                new{$(type_param_names...)}($(fields...), $OrderedDict{Symbol,Any}(kwargs...))
+                new{$(type_param_names...)}($(fields...), $DynamicProperties(; kwargs...))
         end
     end
 
-    push!(struct_body, :($DYNAMIC_PROPERTIES_FIELD_NAME::$OrderedDict{Symbol,Any}))
+    push!(struct_body, :($DYNAMIC_PROPERTIES_FIELD_NAME::$DynamicProperties))
     append!(struct_body, constructors.args)
 
     return quote
         $(esc(expr))
 
         function Base.propertynames(x::$(esc(struct_name)))
-            isempty(property_dict(x)) && return fieldnames(typeof(x))[1:end-1]
-            (fieldnames(typeof(x))[1:end-1]..., keys(property_dict(x))...)
+            is_property_dict_empty(x) && return fieldnames(typeof(x))[1:end-1]
+            (fieldnames(typeof(x))[1:end-1]..., property_dict(x).keys...)
         end
 
         function Base.propertynames(x::$(esc(struct_name)), private::Bool)
-            private && return (fieldnames(typeof(x))..., keys(property_dict(x))...)
+            private && is_property_dict_empty(x) && return fieldnames(typeof(x))
+            private && return (fieldnames(typeof(x))..., property_dict(x).keys...)
             Base.propertynames(x)
         end
 
@@ -139,16 +158,21 @@ macro dynamic(expr::Expr)
 
         function Base.setproperty!(x::$(esc(struct_name)), name::Symbol, value)
             hasfield(typeof(x), name) && return setfield!(x, name, value)
+            !is_property_dict_instantiated(x) && instantiate_property_dict!(x)
             setindex!(property_dict(x), value, name)
         end
 
         function Base.hash(x::$(esc(struct_name)), h::UInt)
-            field_hash = foldr(hash, getfield(x, fieldname) for fieldname in fieldnames(typeof(x)); init=h)
+            dp_hash = is_property_dict_empty(x) ? h : hash(property_dict(x), h)
+            field_hash = foldr(hash, getfield(x, fieldname) for fieldname in fieldnames(typeof(x))[1:end-1]; init=dp_hash)
             hash(typeof(x), field_hash)
         end
 
         function Base.:(==)(x::$(esc(struct_name)), y::$(esc(struct_name)))
-            !any(name -> getfield(x, name) != getfield(y, name), fieldnames(typeof(x)))
+            x_empty, y_empty = is_property_dict_empty(x), is_property_dict_empty(y)
+            x_empty != y_empty && return false
+            !x_empty && !y_empty && property_dict(x) != property_dict(y) && return false
+            !any(name -> getfield(x, name) != getfield(y, name), fieldnames(typeof(x))[1:end-1])
         end
 
         Base.show(io::IO, x::$(esc(struct_name))) = showdynamic(io, x)
