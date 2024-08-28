@@ -115,7 +115,7 @@ macro dynamic(expr::Expr)
 
         function Base.hasproperty(x::$(esc(struct_name)), name::Symbol)
             hasfield(typeof(x), name) && return true
-            is_property_dict_instantiated(x) && name in keys(property_dict(x)) && return true
+            !is_property_dict_empty(x) && name in keys(property_dict(x)) && return true
             false
         end
         
