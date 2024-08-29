@@ -69,9 +69,9 @@ ship.fuel = 20906.0 # assign fuel
 ship.crew # ["Grace"]
 ship.fuel # 20906.0
 
-@has ship.fuel # true
-@del! ship.fuel # delete fuel
-@has ship.fuel # false
+hasproperty(ship, :fuel) # true
+delete!(ship, :fuel) # delete fuel
+hasproperty(ship, :fuel) # false
 ship.fuel # ERROR: Spaceship instance has no field or property fuel
 ```
 """
@@ -134,6 +134,7 @@ macro dynamic(expr::Expr)
             hasfield(typeof(x), name) && return setfield!(x, name, value)
             !is_property_dict_instantiated(x) && instantiate_property_dict!(x)
             setindex!(property_dict(x), value, name)
+            value
         end
 
         function Base.delete!(x::$(esc(struct_name)), name::Symbol)
