@@ -113,6 +113,12 @@ macro dynamic(expr::Expr)
     return quote
         $(esc(expr))
 
+        function Base.hasproperty(x::$(esc(struct_name)), name::Symbol)
+            hasfield(typeof(x), name) && return true
+            !is_property_dict_empty(x) && name in keys(property_dict(x)) && return true
+            false
+        end
+        
         function Base.propertynames(x::$(esc(struct_name)))
             is_property_dict_empty(x) && return fieldnames(typeof(x))[1:end-1]
             (fieldnames(typeof(x))[1:end-1]..., property_dict(x).keys...)
