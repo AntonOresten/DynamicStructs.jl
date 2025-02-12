@@ -11,27 +11,32 @@ DynamicStructs is a Julia package that allows you to create structs with dynamic
 Install from the REPL with `]add DynamicStructs`.
 
 ```julia
-using DynamicStructs
+julia> using DynamicStructs
 
-@dynamic struct Spaceship
-    name::String
-end
+julia> @dynamic struct Spaceship
+           name::String
+       end
 
-ship = Spaceship("Hail Mary", crew=["Grace", "Yao", "Ilyukhina"])
+julia> ship = Spaceship("Hail Mary", crew=["Grace", "Yao", "Ilyukhina"])
+Spaceship("Hail Mary"; crew=["Grace", "Yao", "Ilyukhina"])
 
-ship.name # "Hail Mary"
-ship.crew # ["Grace", "Yao", "Ilyukhina"]
+julia> ship.name, ship.crew
+("Hail Mary", ["Grace", "Yao", "Ilyukhina"])
 
-ship.crew = ["Grace"] # reassign crew
-ship.fuel = 20906.0 # assign fuel
+julia> ship.crew = ["Grace"]; # reassign crew
 
-ship.crew # ["Grace"]
-ship.fuel # 20906.0
+julia> ship.fuel = 20906.0; # assign fuel
 
-hasproperty(ship, :fuel) # true
-delete!(ship, :fuel) # delete fuel
-hasproperty(ship, :fuel) # false
-ship.fuel # ERROR: Spaceship instance has no field or property fuel
+julia> Spaceship("Hail Mary"; crew=["Grace"], fuel=20906.0)
+
+julia> hasproperty(ship, :fuel)
+true
+
+julia> delete!(ship, :fuel) # delete fuel
+Spaceship("Hail Mary"; crew=["Grace"])
+
+julia> hasproperty(ship, :fuel)
+false
 ```
 
 ## Features
@@ -47,23 +52,15 @@ julia> (isdynamictype(Spaceship), isdynamic(ship), isdynamic(Spaceship))
 (true, true, false)
 ```
 
-- Get a tuple of the current dynamic properties with `getproperties(ship; fields=false)`:
+- `NoFields` and `OnlyFields` singleton types for methods of `Base.propertynames`:
+  - `propertynames(x, NoFields())` returns only non-field property names.
+  - `propertynames(x, OnlyFields())` returns only field names.
+- `propertyvalues` takes the same arguments as `Base.propertynames` and iterates over the names to return a tuple of values.
+- `propertypairs` returns the pairs, mapping the names of `Base.propertynames` to the values of `propertyvalues`
 
-```julia
-julia> getproperties(ship; fields=false)
-(:crew,)
-```
+## Limitations
 
-- Custom show method for pretty-printing (generalized to work with any type using `show_fields_properties(io, x)`):
-
-```julia
-julia> ship
-Spaceship:
-  1 field:
-    name::String = "Hail Mary"
-  1 property:
-    crew::Vector{String} = ["Grace"]
-```
+Inner constructors are not supported, as Julia's default constructors do useful conversions that would otherwise be overwritten. Moreover, a constructor that uses `new` without passing a `DynamicStructs.DynamicProperties` will not properly instantiate the dynamic instance.
 
 ## See also
 

@@ -1,11 +1,3 @@
-
-# The `@dynamic` macro adds a field of type `DynamicProperties` to the struct definition, which lazily
-# wraps a `OrderedCollections.LittleDict{Symbol, Any, Vector{Symbol}, Vector{Any}}` to avoid unnecessary
-# memory use when properties are yet to be added. The `Base.getproperty` and `Base.setproperty!` methods
-# for the new type are defined to access this dictionary when the property being accessed is not a field.
-# A `show` method for contexts like the REPL is defined to display the fields and dynamic properties of
-# the new type in a nice and clear format.
-
 mutable struct DynamicProperties
     dict::LittleDict{Symbol,Any,Vector{Symbol},Vector{Any}}
     DynamicProperties(; kwargs...) = isempty(kwargs) ? new() : new(LittleDict{Symbol,Any}(kwargs...))
@@ -45,6 +37,22 @@ end
 isfield(ex) = !isnothing(deconstruct_field(ex))
 
 not_found_error(x, name) = throw(ErrorException("$(typeof(x)) instance has no field or property $name"))
+
+function showdynamic(io::IO, x::T) where T
+    fields = propertynames(x, OnlyFields())
+    properties = propertynames(x, NoFields())
+    print(io, "$T(")
+    for (i, fieldname) in enumerate(fields)
+        print(io, repr(getfield(x, fieldname)))
+        i < length(fields) && print(io, ", ")
+    end
+    isempty(properties) || print(io, "; ")
+    for (i, property) in enumerate(properties)
+        print(io, property, "=", repr(getproperty(x, property)))
+        i < length(properties) && print(io, ", ")
+    end
+    print(io, ")")
+end
 
 """
     @dynamic [mutable] struct ... end
@@ -86,32 +94,16 @@ macro dynamic(expr::Expr)
     struct_name, type_params = struct_type isa Expr && struct_type.head == :curly ?
         (struct_type.args[1], struct_type.args[2:end]) : (struct_type, [])
 
-    get_type_param_name = tp -> tp isa Expr ? get_type_param_name(tp.args[1]) : tp
-    type_param_names = [get_type_param_name(tp) for tp in type_params]
-
-    fields, field_types = zip([deconstruct_field(f) for f in struct_body if isfield(f)]...)
-
-    field_type_asserts = [Expr(:(::), f, ft) for (f, ft) in zip(fields, field_types)]
-    constructors = if isempty(type_param_names)
-        quote
-            $struct_name($(field_type_asserts...); kwargs...) =
-                new($(fields...), $DynamicProperties(; kwargs...))
-        end
-    else
-        quote
-            $struct_name($(field_type_asserts...); kwargs...) where {$(type_param_names...)} =
-                new{$(type_param_names...)}($(fields...), $DynamicProperties(; kwargs...))
-                
-            $struct_name{$(type_param_names...)}($(fields...); kwargs...) where {$(type_param_names...)} =
-                new{$(type_param_names...)}($(fields...), $DynamicProperties(; kwargs...))
-        end
-    end
+    fields, _ = zip([deconstruct_field(f) for f in struct_body if isfield(f)]...)
 
     push!(struct_body, :($DYNAMIC_PROPERTIES_FIELD_NAME::$DynamicProperties))
-    append!(struct_body, constructors.args)
 
     return quote
         $(esc(expr))
+
+        function $(esc(struct_name))($(fields...); kwargs...)
+            $(esc(struct_name))($(fields...), $DynamicProperties(; kwargs...))
+        end
 
         function Base.hasproperty(x::$(esc(struct_name)), name::Symbol)
             hasfield(typeof(x), name) && return true
@@ -162,7 +154,6 @@ macro dynamic(expr::Expr)
         end
 
         Base.show(io::IO, x::$(esc(struct_name))) = showdynamic(io, x)
-        Base.show(io::IO, ::MIME"text/plain", x::$(esc(struct_name))) = show_fields_properties(io, x)
 
         nothing
     end
