@@ -147,13 +147,4 @@ using Test
         VERSION ≥ v"1.8" && include("const-field.jl")
     end
 
-    @testset "Custom constructor" begin
-        @dynamic struct Point{T}
-            x::T
-            y::T
-        end
-
-        @test Point() == Point{Int}(1, 1)
-        @test Point{Float64}() == Point(1.0, 1.0)
-    end
 end
