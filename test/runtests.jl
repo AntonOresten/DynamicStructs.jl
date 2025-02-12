@@ -94,7 +94,7 @@ using Test
             id::T
         end
 
-        p = GenericPerson{String}("ID001", nickname="Dave")
+        p = GenericPerson("ID001", nickname="Dave")
         @test p.id == "ID001"
         @test p.nickname == "Dave"
     end
