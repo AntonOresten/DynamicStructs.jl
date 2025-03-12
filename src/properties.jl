@@ -1,8 +1,8 @@
 struct NoFields end
 struct OnlyFields end
 
-@deprecate Base.propertynames(x, ::NoFields, args...) propertynames(x, NoFields, args...) false
-@deprecate Base.propertynames(x, ::OnlyFields, args...) propertynames(x, OnlyFields, args...) false
+@deprecate Base.propertynames(x, ::NoFields, private=false) propertynames(x, NoFields, private) false
+@deprecate Base.propertynames(x, ::OnlyFields, private=false) propertynames(x, OnlyFields, private) false
 
 """
     Base.propertynames(x, ::Type{NoFields}, private=false)
