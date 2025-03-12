@@ -6,11 +6,11 @@ end
 const DYNAMIC_PROPERTIES_FIELD_NAME = :_dynamic_properties
 
 @inline dynamic_properties(x)::DynamicProperties = getfield(x, DYNAMIC_PROPERTIES_FIELD_NAME)
-@inline property_dict(x) = getfield(dynamic_properties(x), :dict)
+@inline property_dict(x) = dynamic_properties(x).dict
 
 is_property_dict_instantiated(x) = isdefined(dynamic_properties(x), :dict)
 is_property_dict_empty(x) = !is_property_dict_instantiated(x) || isempty(property_dict(x))
-instantiate_property_dict!(x) = setfield!(dynamic_properties(x), :dict, LittleDict{Symbol,Any}())
+instantiate_property_dict!(x) = (dynamic_properties(x).dict = LittleDict{Symbol,Any}())
 
 """
     isdynamictype(T)
@@ -38,9 +38,12 @@ isfield(ex) = !isnothing(deconstruct_field(ex))
 
 not_found_error(x, name) = throw(ErrorException("$(typeof(x)) instance has no field or property $name"))
 
-function showdynamic(io::IO, x::T) where T
-    fields = propertynames(x, OnlyFields())
-    properties = propertynames(x, NoFields())
+has_inner_constructor(struct_body) =
+    any(expr -> expr isa Expr && expr.head in (:function, :(=)), struct_body)
+
+function showkwarg(io::IO, x::T) where T
+    fields = propertynames(x, OnlyFields)
+    properties = propertynames(x, NoFields)
     print(io, "$T(")
     for (i, fieldname) in enumerate(fields)
         print(io, repr(getfield(x, fieldname)))
@@ -96,14 +99,24 @@ macro dynamic(expr::Expr)
 
     fields, _ = zip([deconstruct_field(f) for f in struct_body if isfield(f)]...)
 
-    push!(struct_body, :($DYNAMIC_PROPERTIES_FIELD_NAME::$DynamicProperties))
+    insert!(struct_body, 1, :($DYNAMIC_PROPERTIES_FIELD_NAME::$DynamicProperties))
+
+    kwargs_constructor = if !has_inner_constructor(struct_body)
+        quote
+            function $(esc(struct_name))($(fields...); kwargs...)
+                $(esc(struct_name))($DynamicProperties(; kwargs...), $(fields...))
+            end
+
+            Base.show(io::IO, x::$(esc(struct_name))) = showkwarg(io, x)
+        end
+    else
+        nothing
+    end
 
     return quote
         $(esc(expr))
 
-        function $(esc(struct_name))($(fields...); kwargs...)
-            $(esc(struct_name))($(fields...), $DynamicProperties(; kwargs...))
-        end
+        $kwargs_constructor
 
         function Base.hasproperty(x::$(esc(struct_name)), name::Symbol)
             hasfield(typeof(x), name) && return true
@@ -112,8 +125,8 @@ macro dynamic(expr::Expr)
         end
         
         function Base.propertynames(x::$(esc(struct_name)))
-            is_property_dict_empty(x) && return fieldnames(typeof(x))[1:end-1]
-            (fieldnames(typeof(x))[1:end-1]..., property_dict(x).keys...)
+            is_property_dict_empty(x) && return fieldnames(typeof(x))[2:end]
+            (fieldnames(typeof(x))[2:end]..., property_dict(x).keys...)
         end
 
         function Base.propertynames(x::$(esc(struct_name)), private::Bool)
@@ -142,7 +155,7 @@ macro dynamic(expr::Expr)
 
         function Base.hash(x::$(esc(struct_name)), h::UInt)
             dp_hash = is_property_dict_empty(x) ? h : hash(property_dict(x), h)
-            field_hash = foldr(hash, getfield(x, fieldname) for fieldname in fieldnames(typeof(x))[1:end-1]; init=dp_hash)
+            field_hash = foldr(hash, getfield(x, fieldname) for fieldname in fieldnames(typeof(x))[2:end]; init=dp_hash)
             hash(typeof(x), field_hash)
         end
 
@@ -153,8 +166,20 @@ macro dynamic(expr::Expr)
             !any(name -> getfield(x, name) != getfield(y, name), fieldnames(typeof(x))[1:end-1])
         end
 
-        Base.show(io::IO, x::$(esc(struct_name))) = showdynamic(io, x)
-
         nothing
     end
+end
+
+"""
+    @construct new(args...)
+    @construct new{params...}(args...)
+
+Used to construct an instance of a dynamic type inside of an inner constructor.
+
+Works by inserting a `DynamicProperties` instance as the first argument to the constructor.
+"""
+macro construct(newargs)
+    @assert newargs isa Expr && newargs.head == :call
+    new, args = newargs.args[1], newargs.args[2:end]
+    :($(esc(new))($(DynamicStructs.DynamicProperties)(), $(args...)))
 end

@@ -8,6 +8,6 @@ export propertyvalues, propertypairs
 
 include("dynamic.jl")
 export isdynamictype, isdynamic
-export @dynamic
+export @dynamic, @construct
 
 end

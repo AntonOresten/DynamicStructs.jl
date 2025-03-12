@@ -11,15 +11,15 @@ using Test
     @testset "properties" begin
         p = Person("Neil", 66, occupation="Besserwisser")
 
-        @test propertynames(p, NoFields()) == (:occupation,)
-        @test propertynames(p, OnlyFields()) == (:name, :age)
-        @test propertynames(p, OnlyFields(), true) == (:name, :age, DynamicStructs.DYNAMIC_PROPERTIES_FIELD_NAME)
+        @test propertynames(p, NoFields) == (:occupation,)
+        @test propertynames(p, OnlyFields) == (:name, :age)
+        @test propertynames(p, OnlyFields, true) == (DynamicStructs.DYNAMIC_PROPERTIES_FIELD_NAME, :name, :age)
 
-        @test propertyvalues(p, NoFields()) == ("Besserwisser",)
-        @test propertyvalues(p, OnlyFields()) == ("Neil", 66)
+        @test propertyvalues(p, NoFields) == ("Besserwisser",)
+        @test propertyvalues(p, OnlyFields) == ("Neil", 66)
 
-        @test propertypairs(p, NoFields()) == (:occupation => "Besserwisser",)
-        @test propertypairs(p, OnlyFields()) == (:name => "Neil", :age => 66)
+        @test propertypairs(p, NoFields) == (:occupation => "Besserwisser",)
+        @test propertypairs(p, OnlyFields) == (:name => "Neil", :age => 66)
     end
 
     @testset "Default constructor" begin

@@ -53,8 +53,8 @@ julia> (isdynamictype(Spaceship), isdynamic(ship), isdynamic(Spaceship))
 ```
 
 - `NoFields` and `OnlyFields` singleton types for methods of `Base.propertynames`:
-  - `propertynames(x, NoFields())` returns only non-field property names.
-  - `propertynames(x, OnlyFields())` returns only field names.
+  - `propertynames(x, NoFields)` returns only non-field property names.
+  - `propertynames(x, OnlyFields)` returns only field names.
 - `propertyvalues` takes the same arguments as `Base.propertynames` and iterates over the names to return a tuple of values.
 - `propertypairs` returns the pairs, mapping the names of `Base.propertynames` to the values of `propertyvalues`
 

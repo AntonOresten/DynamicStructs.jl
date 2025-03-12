@@ -1,19 +1,22 @@
 struct NoFields end
 struct OnlyFields end
 
+@deprecate Base.propertynames(x, ::NoFields, args...) propertynames(x, NoFields, args...) false
+@deprecate Base.propertynames(x, ::OnlyFields, args...) propertynames(x, OnlyFields, args...) false
+
 """
-    Base.propertynames(x, NoFields(), private=false)
+    Base.propertynames(x, ::Type{NoFields}, private=false)
 
 Excludes field names.
 """
-Base.propertynames(x, ::NoFields, private=false) = Tuple(setdiff(propertynames(x, private), fieldnames(typeof(x))))
+Base.propertynames(x, ::Type{NoFields}, private=false) = Tuple(setdiff(propertynames(x, private), fieldnames(typeof(x))))
 
 """
-    Base.propertynames(x, OnlyFields(), private=false)
+    Base.propertynames(x, ::Type{OnlyFields}, private=false)
 
 Includes only field names.
 """
-Base.propertynames(x, ::OnlyFields, private=false) = Tuple(setdiff(fieldnames(typeof(x)), setdiff(propertynames(x, true), propertynames(x, private))))
+Base.propertynames(x, ::Type{OnlyFields}, private=false) = Tuple(setdiff(fieldnames(typeof(x)), setdiff(propertynames(x, true), propertynames(x, private))))
 
 """
     propertyvalues(x, args...)
