@@ -8,7 +8,7 @@ using Test
         age::Int
     end
 
-    @testset "properties" begin
+    @testset "property utilities" begin
         p = Person("Neil", 66, occupation="Besserwisser")
 
         @test propertynames(p, NoFields) == (:occupation,)
@@ -20,6 +20,16 @@ using Test
 
         @test propertypairs(p, NoFields) == (:occupation => "Besserwisser",)
         @test propertypairs(p, OnlyFields) == (:name => "Neil", :age => 66)
+
+        # deprecated
+        @test propertynames(p, NoFields()) == propertynames(p, NoFields)
+        @test propertynames(p, OnlyFields()) == propertynames(p, OnlyFields)
+        @test propertynames(p, OnlyFields(), true) == propertynames(p, OnlyFields, true)
+    end
+
+    @testset "Properties" begin
+        p = DynamicStructs.Properties(a = 1, b = 2, c = 3)
+        @test repr(p) == "DynamicStructs.Properties(a = 1, b = 2, c = 3)"
     end
 
     @testset "Default constructor" begin
@@ -97,6 +107,7 @@ using Test
         p = GenericPerson("ID001", nickname="Dave")
         @test p.id == "ID001"
         @test p.nickname == "Dave"
+        @test GenericPerson{String}("ID001", nickname="Dave") == p
     end
 
     @testset "Inheritance" begin
@@ -145,6 +156,21 @@ using Test
         @test p.job == "General"
 
         VERSION ≥ v"1.8" && include("const-field.jl")
+
+        @dynamic mutable struct AtomicPerson
+            @atomic name::String
+        end
+    end
+
+    @testset "built-in constructors" begin
+        @dynamic struct BuiltinPerson
+            name::String
+            0 # detected as non-field, removing dynamic constructor
+        end
+
+        p = BuiltinPerson(DynamicStructs.Properties(age=25), "John")
+        @test p.name == "John"
+        @test p.age == 25
     end
 
 end

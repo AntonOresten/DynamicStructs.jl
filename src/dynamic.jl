@@ -78,7 +78,6 @@ macro dynamic(expr::Expr)
                 end
                 $struct_name($(fields...); kwargs...) =
                     new($Properties(; kwargs...), $(fields...))
-                Base.show(io::IO, x::$struct_name) = $showdynamic(io, x)
             end
         else
             P = T.args[2:end]
@@ -88,10 +87,12 @@ macro dynamic(expr::Expr)
                     new{$(Q...)}($Properties(; kwargs...), $(fields...))
                 $struct_name{$(Q...)}($(fields...); kwargs...) where {$(Q...)} =
                     new{$(Q...)}($Properties(; kwargs...), $(fields...))
-                Base.show(io::IO, x::$struct_name) = showdynamic(io, x)
             end
         end
         push!(fieldsblock.args, constructors)
+        push!(fieldsblock.args, quote
+            Base.show(io::IO, x::$struct_name) = $showdynamic(io, x)
+        end)
     end
 
     insert!(fieldsblock.args, 1, :($PROPERTIES_FIELD_NAME::$Properties))
