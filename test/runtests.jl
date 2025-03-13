@@ -155,11 +155,8 @@ using Test
         p.job = "General"
         @test p.job == "General"
 
+        VERSION ≥ v"1.7" && include("atomic-field.jl")
         VERSION ≥ v"1.8" && include("const-field.jl")
-
-        @dynamic mutable struct AtomicPerson
-            @atomic name::String
-        end
     end
 
     @testset "built-in constructors" begin
