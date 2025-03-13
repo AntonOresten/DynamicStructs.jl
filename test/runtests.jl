@@ -8,28 +8,18 @@ using Test
         age::Int
     end
 
-    @testset "property utilities" begin
+    @testset "properties" begin
         p = Person("Neil", 66, occupation="Besserwisser")
 
-        @test propertynames(p, NoFields) == (:occupation,)
-        @test propertynames(p, OnlyFields) == (:name, :age)
-        @test propertynames(p, OnlyFields, true) == (DynamicStructs.PROPERTIES_FIELD_NAME, :name, :age)
+        @test propertynames(p, NoFields()) == (:occupation,)
+        @test propertynames(p, OnlyFields()) == (:name, :age)
+        @test propertynames(p, OnlyFields(), true) == (:name, :age, DynamicStructs.DYNAMIC_PROPERTIES_FIELD_NAME)
 
-        @test propertyvalues(p, NoFields) == ("Besserwisser",)
-        @test propertyvalues(p, OnlyFields) == ("Neil", 66)
+        @test propertyvalues(p, NoFields()) == ("Besserwisser",)
+        @test propertyvalues(p, OnlyFields()) == ("Neil", 66)
 
-        @test propertypairs(p, NoFields) == (:occupation => "Besserwisser",)
-        @test propertypairs(p, OnlyFields) == (:name => "Neil", :age => 66)
-
-        # deprecated
-        @test propertynames(p, NoFields()) == propertynames(p, NoFields)
-        @test propertynames(p, OnlyFields()) == propertynames(p, OnlyFields)
-        @test propertynames(p, OnlyFields(), true) == propertynames(p, OnlyFields, true)
-    end
-
-    @testset "Properties" begin
-        p = DynamicStructs.Properties(a = 1, b = 2, c = 3)
-        @test repr(p) == "DynamicStructs.Properties(a = 1, b = 2, c = 3)"
+        @test propertypairs(p, NoFields()) == (:occupation => "Besserwisser",)
+        @test propertypairs(p, OnlyFields()) == (:name => "Neil", :age => 66)
     end
 
     @testset "Default constructor" begin
@@ -51,7 +41,7 @@ using Test
     @testset "Show" begin
         p = Person("Jacob", 19, instrument="guitar")
         str = sprint(show, p)
-        @test str == "Person(\"Jacob\", 19; instrument = \"guitar\")"
+        @test str == "Person(\"Jacob\", 19; instrument=\"guitar\")"
     end
 
     @testset "Hash" begin
@@ -107,7 +97,6 @@ using Test
         p = GenericPerson("ID001", nickname="Dave")
         @test p.id == "ID001"
         @test p.nickname == "Dave"
-        @test GenericPerson{String}("ID001", nickname="Dave") == p
     end
 
     @testset "Inheritance" begin
@@ -155,19 +144,7 @@ using Test
         p.job = "General"
         @test p.job == "General"
 
-        VERSION ≥ v"1.7" && include("atomic-field.jl")
         VERSION ≥ v"1.8" && include("const-field.jl")
-    end
-
-    @testset "built-in constructors" begin
-        @dynamic struct BuiltinPerson
-            name::String
-            0 # detected as non-field, removing dynamic constructor
-        end
-
-        p = BuiltinPerson(DynamicStructs.Properties(age=25), "John")
-        @test p.name == "John"
-        @test p.age == 25
     end
 
 end

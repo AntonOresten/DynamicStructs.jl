@@ -1,9 +1,23 @@
+mutable struct DynamicProperties
+    dict::LittleDict{Symbol,Any,Vector{Symbol},Vector{Any}}
+    DynamicProperties(; kwargs...) = isempty(kwargs) ? new() : new(LittleDict{Symbol,Any}(kwargs...))
+end
+
+const DYNAMIC_PROPERTIES_FIELD_NAME = :_dynamic_properties
+
+@inline dynamic_properties(x)::DynamicProperties = getfield(x, DYNAMIC_PROPERTIES_FIELD_NAME)
+@inline property_dict(x) = getfield(dynamic_properties(x), :dict)
+
+is_property_dict_instantiated(x) = isdefined(dynamic_properties(x), :dict)
+is_property_dict_empty(x) = !is_property_dict_instantiated(x) || isempty(property_dict(x))
+instantiate_property_dict!(x) = setfield!(dynamic_properties(x), :dict, LittleDict{Symbol,Any}())
+
 """
     isdynamictype(T)
 
 Check if `T` is a dynamic type.
 """
-isdynamictype(@nospecialize T) = false
+isdynamictype(@nospecialize T) = T isa Type && hasfield(T, DYNAMIC_PROPERTIES_FIELD_NAME)
 
 """
     isdynamic(x)
@@ -12,29 +26,30 @@ Check if `x` is an instance of a dynamic type.
 """
 isdynamic(@nospecialize x) = isdynamictype(typeof(x))
 
-const PROPERTIES_FIELD_NAME = :__properties
-
-@inline properties(x) = getfield(x, PROPERTIES_FIELD_NAME)
-
-function deconstruct_field(f)
-    f isa Symbol && return f, :Any
-    Meta.isexpr(f, (:const, :atomic)) && return deconstruct_field(f.args[1])
-    Meta.isexpr(f, :(::)) && return f.args[1], f.args[2]
+deconstruct_field(_) = nothing
+deconstruct_field(f::Symbol) = f, :Any
+function deconstruct_field(f::Expr)
+    f.head == :const && return deconstruct_field(f.args[1])
+    f.head == :(::) && return f.args[1], f.args[2]
     return nothing
 end
 
-function showdynamic(io::IO, @nospecialize x)
-    show(io, typeof(x))
-    print(io, "(")
-    fieldvals = propertyvalues(x, OnlyFields)
-    for (i, val) in enumerate(fieldvals)
-        show(io, val)
-        i < length(fieldvals) && print(io, ", ")
+isfield(ex) = !isnothing(deconstruct_field(ex))
+
+not_found_error(x, name) = throw(ErrorException("$(typeof(x)) instance has no field or property $name"))
+
+function showdynamic(io::IO, x::T) where T
+    fields = propertynames(x, OnlyFields())
+    properties = propertynames(x, NoFields())
+    print(io, "$T(")
+    for (i, fieldname) in enumerate(fields)
+        print(io, repr(getfield(x, fieldname)))
+        i < length(fields) && print(io, ", ")
     end
-    for (i, (prop, val)) in enumerate(propertypairs(x, NoFields))
-        print(io, isone(i) ? "; " : ", ")
-        print(io, prop, " = ")
-        show(io, val)
+    isempty(properties) || print(io, "; ")
+    for (i, property) in enumerate(properties)
+        print(io, property, "=", repr(getproperty(x, property)))
+        i < length(properties) && print(io, ", ")
     end
     print(io, ")")
 end
@@ -42,98 +57,103 @@ end
 """
     @dynamic [mutable] struct ... end
 
-Define a dynamic struct:
+## Examples
 
-- Instances of dynamic structs have dynamic properties that can be added/deleted at runtime.
-  These properties are similar to `Any`-typed fields of structs in terms of performance.
+```julia
+using DynamicStructs
 
-- Fields remain statically typed and accessing them compiles similarly to structs,
-  so performance should not be significantly affected.
+@dynamic struct Spaceship
+    name::String
+end
 
-- The macro adds a hidden field for storing dynamic properties with lazy initialization,
-  meaning that the underlying storage is not allocated until the first dynamic property is added.
+ship = Spaceship("Hail Mary", crew=["Grace", "Yao", "Ilyukhina"])
 
-- The default constructors of dynamic structs accept keyword arguments for dynamic properties,
-  with a `Base.show` method that reflects this.
-  These are only present if the block is free of any non-field expressions, such as custom constructors.
+ship.name # "Hail Mary"
+ship.crew # ["Grace", "Yao", "Ilyukhina"]
+
+ship.crew = ["Grace"] # reassign crew
+ship.fuel = 20906.0 # assign fuel
+
+ship.crew # ["Grace"]
+ship.fuel # 20906.0
+
+hasproperty(ship, :fuel) # true
+delete!(ship, :fuel) # delete fuel
+hasproperty(ship, :fuel) # false
+ship.fuel # ERROR: Spaceship instance has no field or property fuel
+```
 """
 macro dynamic(expr::Expr)
-    expr = macroexpand(__module__, expr)
-    Meta.isexpr(expr, :struct) || error("`@dynamic` can only be applied to struct definitions")
-    _, T, fieldsblock = expr.args
-    T = Meta.isexpr(T, :<:) ? T.args[1] : T
-    struct_name = Meta.isexpr(T, :curly) ? T.args[1] : T
+    expr.head == :struct || error("`@dynamic` can only be applied to struct definitions")
 
-    fieldlines = deconstruct_field.(Base.remove_linenums!(copy(fieldsblock)).args)
+    struct_def = expr.args[2]
+    struct_body = expr.args[3].args
 
-    if !any(isnothing, fieldlines)
-        fields = first.(fieldlines)
-        types = last.(fieldlines)
-        asserts = [Expr(:(::), f, t) for (f,t) in zip(fields, types)]
-        constructors = if !Meta.isexpr(T, :curly)
-            quote
-                if !all(==(:Any), $types)
-                    $struct_name($(asserts...); kwargs...) =
-                        new($Properties(; kwargs...), $(fields...))
-                end
-                $struct_name($(fields...); kwargs...) =
-                    new($Properties(; kwargs...), $(fields...))
-            end
-        else
-            P = T.args[2:end]
-            Q = Any[Meta.isexpr(U, :<:) ? U.args[1] : U for U in P]
-            quote
-                $struct_name($(asserts...); kwargs...) where {$(Q...)} =
-                    new{$(Q...)}($Properties(; kwargs...), $(fields...))
-                $struct_name{$(Q...)}($(fields...); kwargs...) where {$(Q...)} =
-                    new{$(Q...)}($Properties(; kwargs...), $(fields...))
-            end
-        end
-        push!(fieldsblock.args, constructors)
-        push!(fieldsblock.args, quote
-            Base.show(io::IO, x::$struct_name) = $showdynamic(io, x)
-        end)
-    end
+    struct_type, supertype = struct_def isa Expr && struct_def.head == :(<:) ?
+        struct_def.args : (struct_def, :Any)
+    struct_name, type_params = struct_type isa Expr && struct_type.head == :curly ?
+        (struct_type.args[1], struct_type.args[2:end]) : (struct_type, [])
 
-    insert!(fieldsblock.args, 1, :($PROPERTIES_FIELD_NAME::$Properties))
+    fields, _ = zip([deconstruct_field(f) for f in struct_body if isfield(f)]...)
+
+    push!(struct_body, :($DYNAMIC_PROPERTIES_FIELD_NAME::$DynamicProperties))
 
     return quote
-        $(esc(:($Base.@__doc__ $expr)))
+        $(esc(expr))
 
-        Base.hasproperty(x::$(esc(struct_name)), name::Symbol) =
-            hasfield(typeof(x), name) || hasproperty(properties(x), name)
+        function $(esc(struct_name))($(fields...); kwargs...)
+            $(esc(struct_name))($(fields...), $DynamicProperties(; kwargs...))
+        end
 
-        Base.propertynames(x::$(esc(struct_name))) =
-            (fieldnames(typeof(x))[2:end]..., propertynames(properties(x))...)
+        function Base.hasproperty(x::$(esc(struct_name)), name::Symbol)
+            hasfield(typeof(x), name) && return true
+            !is_property_dict_empty(x) && name in keys(property_dict(x)) && return true
+            false
+        end
+        
+        function Base.propertynames(x::$(esc(struct_name)))
+            is_property_dict_empty(x) && return fieldnames(typeof(x))[1:end-1]
+            (fieldnames(typeof(x))[1:end-1]..., property_dict(x).keys...)
+        end
 
-        Base.propertynames(x::$(esc(struct_name)), private::Bool) =
-            private ? (fieldnames(typeof(x))..., propertynames(properties(x))...) : Base.propertynames(x)
+        function Base.propertynames(x::$(esc(struct_name)), private::Bool)
+            private && is_property_dict_empty(x) && return fieldnames(typeof(x))
+            private && return (fieldnames(typeof(x))..., property_dict(x).keys...)
+            Base.propertynames(x)
+        end
 
-        Base.getproperty(x::$(esc(struct_name)), name::Symbol) =
-            hasfield(typeof(x), name) ? getfield(x, name) : getproperty(properties(x), name, x)
+        function Base.getproperty(x::$(esc(struct_name)), name::Symbol)
+            hasfield(typeof(x), name) && return getfield(x, name)
+            is_property_dict_instantiated(x) && return get(() -> not_found_error(x, name), property_dict(x), name)
+            not_found_error(x, name)
+        end
 
-        Base.setproperty!(x::$(esc(struct_name)), name::Symbol, value) =
-            hasfield(typeof(x), name) ? setfield!(x, name, value) : setproperty!(properties(x), name, value)
+        function Base.setproperty!(x::$(esc(struct_name)), name::Symbol, value)
+            hasfield(typeof(x), name) && return setfield!(x, name, value)
+            !is_property_dict_instantiated(x) && instantiate_property_dict!(x)
+            setindex!(property_dict(x), value, name)
+            value
+        end
 
-        Base.delete!(x::$(esc(struct_name)), name::Symbol) = (delete!(properties(x), name); x)
+        function Base.delete!(x::$(esc(struct_name)), name::Symbol)
+            is_property_dict_instantiated(x) && delete!(property_dict(x), name)
+            x
+        end
 
         function Base.hash(x::$(esc(struct_name)), h::UInt)
-            p_hash = hasnoproperty(properties(x)) ? h : hash(propertydict(properties(x)), h)
-            field_hash = foldr(hash, getfield(x, fieldname) for fieldname in fieldnames(typeof(x))[2:end]; init=p_hash)
+            dp_hash = is_property_dict_empty(x) ? h : hash(property_dict(x), h)
+            field_hash = foldr(hash, getfield(x, fieldname) for fieldname in fieldnames(typeof(x))[1:end-1]; init=dp_hash)
             hash(typeof(x), field_hash)
         end
 
         function Base.:(==)(x::$(esc(struct_name)), y::$(esc(struct_name)))
-            x_empty, y_empty = hasnoproperty(properties(x)), hasnoproperty(properties(y))
+            x_empty, y_empty = is_property_dict_empty(x), is_property_dict_empty(y)
             x_empty != y_empty && return false
-            !x_empty && !y_empty && propertydict(properties(x)) != propertydict(properties(y)) && return false
-            !any(name -> getfield(x, name) != getfield(y, name), fieldnames(typeof(x))[2:end])
+            !x_empty && !y_empty && property_dict(x) != property_dict(y) && return false
+            !any(name -> getfield(x, name) != getfield(y, name), fieldnames(typeof(x))[1:end-1])
         end
 
-        function $(:(DynamicStructs.isdynamictype))(T::Type{$(esc(struct_name))})
-            @nospecialize T
-            true
-        end
+        Base.show(io::IO, x::$(esc(struct_name))) = showdynamic(io, x)
 
         nothing
     end
