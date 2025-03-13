@@ -1,5 +1,3 @@
-using Base.Meta: isexpr
-
 """
     isdynamictype(T)
 
@@ -18,25 +16,21 @@ const PROPERTIES_FIELD_NAME = :__properties
 
 @inline properties(x) = getfield(x, PROPERTIES_FIELD_NAME)
 
-deconstruct_field(_) = nothing
-deconstruct_field(f::Symbol) = f, :Any
-function deconstruct_field(f::Expr)
-    f.head == :const && return deconstruct_field(f.args[1])
-    f.head == :(::) && return f.args[1], f.args[2]
+function deconstruct_field(f)
+    f isa Symbol && return f, :Any
+    Meta.isexpr(f, :const) && return deconstruct_field(f.args[1])
+    Meta.isexpr(f, :(::)) && return f.args[1], f.args[2]
     return nothing
 end
 
 macro dynamic(expr::Expr)
     expr = macroexpand(__module__, expr)
-    isexpr(expr, :struct) || error("`@dynamic` can only be applied to struct definitions")
+    Meta.isexpr(expr, :struct) || error("`@dynamic` can only be applied to struct definitions")
     _, T, fieldsblock = expr.args
-    if isexpr(T, :<:)
-        T = T.args[1]
-    end
-    struct_name = isexpr(T, :curly) ? T.args[1] : T
+    T = Meta.isexpr(T, :<:) ? T.args[1] : T
+    struct_name = Meta.isexpr(T, :curly) ? T.args[1] : T
 
-    Base.remove_linenums!(fieldsblock)
-    fieldlines = deconstruct_field.(fieldsblock.args)
+    fieldlines = deconstruct_field.(Base.remove_linenums!(copy(fieldsblock)).args)
     has_other_things = any(isnothing, fieldlines)
     filter!(!isnothing, fieldlines)
     fields = first.(fieldlines)
@@ -44,7 +38,7 @@ macro dynamic(expr::Expr)
 
     if !has_other_things
         asserts = [Expr(:(::), f, t) for (f,t) in zip(fields, types)]
-        constructors = if !isexpr(T, :curly)
+        constructors = if !Meta.isexpr(T, :curly)
             quote
                 if !all(==(:Any), $types)
                     $struct_name($(asserts...); kwargs...) =
@@ -55,7 +49,7 @@ macro dynamic(expr::Expr)
             end
         else
             P = T.args[2:end]
-            Q = Any[isexpr(U, :<:) ? U.args[1] : U for U in P]
+            Q = Any[Meta.isexpr(U, :<:) ? U.args[1] : U for U in P]
             quote
                 $struct_name($(asserts...); kwargs...) where {$(Q...)} =
                     new{$(Q...)}($Properties(; kwargs...), $(fields...))
