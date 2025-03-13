@@ -24,6 +24,6 @@ makedocs(;
 )
 
 deploydocs(;
-    repo="github.com/antonoresten/DynamicStructs.jl",
+    repo="github.com/AntonOresten/DynamicStructs.jl",
     devbranch="main",
 )
