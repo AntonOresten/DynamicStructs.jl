@@ -38,25 +38,6 @@ julia> hasproperty(ship, :fuel)
 false
 ```
 
-## Features
-
-- Create structs with both fields and dynamic properties using the `@dynamic` macro.
-- Use `mutable struct` to allow for modifying field values.
-- Type safety for *fields*.
-- Add, modify, and delete dynamic properties at runtime.
-- Check if types and instances are dynamic with `isdynamictype` and `isdynamic`:
-
-```julia
-julia> (isdynamictype(Spaceship), isdynamic(ship), isdynamic(Spaceship))
-(true, true, false)
-```
-
-- `NoFields` and `OnlyFields` singleton types for methods of `Base.propertynames`:
-  - `propertynames(x, NoFields)` returns only non-field property names.
-  - `propertynames(x, OnlyFields)` returns only field names.
-- `propertyvalues` takes the same arguments as `Base.propertynames` and iterates over the names to return a tuple of values.
-- `propertypairs` returns the pairs, mapping the names of `Base.propertynames` to the values of `propertyvalues`
-
 ## See also
 
 - [DynamicObjects.jl](https://github.com/nsiccha/DynamicObjects.jl)
