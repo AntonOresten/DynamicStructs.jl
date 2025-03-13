@@ -7,8 +7,6 @@ DynamicStructs is a Julia package that allows you to create structs with dynamic
 
 ## Usage
 
-Install from the REPL with `]add DynamicStructs`.
-
 ```julia
 julia> using DynamicStructs
 
