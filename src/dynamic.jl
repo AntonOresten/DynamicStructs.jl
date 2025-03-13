@@ -1,7 +1,5 @@
 using Base.Meta: isexpr
 
-uncurly(x) = isexpr(x, :curly) ? x.args[1] : x
-
 """
     isdynamictype(T)
 
@@ -28,20 +26,6 @@ function deconstruct_field(f::Expr)
     return nothing
 end
 
-macro construct(callexpr::Expr)
-    callexpr = macroexpand(__module__, callexpr)
-    isexpr(callexpr, :call) || error("`@construct` can only be applied to a function call")
-    f, args = callexpr.args[1], callexpr.args[2:end]
-    parameters = if !isempty(args) && isexpr(args[1], :parameters)
-        popfirst!(args)
-    else
-        Expr(:parameters)
-    end
-    isempty(args) ?
-        :($(esc(f))($Properties($parameters))) :
-        :($(esc(f))($Properties($parameters), $(esc(args...))))
-end
-
 macro dynamic(expr::Expr)
     expr = macroexpand(__module__, expr)
     isexpr(expr, :struct) || error("`@dynamic` can only be applied to struct definitions")
@@ -49,7 +33,7 @@ macro dynamic(expr::Expr)
     if isexpr(T, :<:)
         T = T.args[1]
     end
-    struct_name = uncurly(T)
+    struct_name = isexpr(T, :curly) ? T.args[1] : T
 
     Base.remove_linenums!(fieldsblock)
     fieldlines = deconstruct_field.(fieldsblock.args)
@@ -59,24 +43,23 @@ macro dynamic(expr::Expr)
     types = last.(fieldlines)
 
     if !has_other_things
-        S = uncurly(T)
         asserts = [Expr(:(::), f, t) for (f,t) in zip(fields, types)]
-        constructors = if S == T
+        constructors = if !isexpr(T, :curly)
             quote
                 if !all(==(:Any), $types)
-                    $S($(asserts...); kwargs...) =
+                    $struct_name($(asserts...); kwargs...) =
                         new($Properties(; kwargs...), $(fields...))
                 end
-                $S($(fields...); kwargs...) =
+                $struct_name($(fields...); kwargs...) =
                     new($Properties(; kwargs...), $(fields...))
             end
         else
             P = T.args[2:end]
             Q = Any[isexpr(U, :<:) ? U.args[1] : U for U in P]
             quote
-                $S($(asserts...); kwargs...) where {$(Q...)} =
+                $struct_name($(asserts...); kwargs...) where {$(Q...)} =
                     new{$(Q...)}($Properties(; kwargs...), $(fields...))
-                $S{$(Q...)}($(fields...); kwargs...) where {$(Q...)} =
+                $struct_name{$(Q...)}($(fields...); kwargs...) where {$(Q...)} =
                     new{$(Q...)}($Properties(; kwargs...), $(fields...))
             end
         end

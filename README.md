@@ -1,7 +1,5 @@
 # DynamicStructs
 
-[![Latest Release](https://img.shields.io/github/release/AntonOresten/DynamicStructs.jl.svg)](https://github.com/AntonOresten/DynamicStructs.jl/releases/latest)
-[![Build Status](https://github.com/AntonOresten/DynamicStructs.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/AntonOresten/DynamicStructs.jl/actions/workflows/CI.yml?query=branch%3Amain)
 [![Coverage](https://codecov.io/gh/AntonOresten/DynamicStructs.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/AntonOresten/DynamicStructs.jl)
 
 DynamicStructs is a Julia package that allows you to create structs with dynamic properties. These properties behave similarly to fields of type `Any` in mutable structs, but are bound to the instance rather than the type, and can be added and deleted at runtime.
@@ -57,10 +55,6 @@ julia> (isdynamictype(Spaceship), isdynamic(ship), isdynamic(Spaceship))
   - `propertynames(x, OnlyFields)` returns only field names.
 - `propertyvalues` takes the same arguments as `Base.propertynames` and iterates over the names to return a tuple of values.
 - `propertypairs` returns the pairs, mapping the names of `Base.propertynames` to the values of `propertyvalues`
-
-## Limitations
-
-Inner constructors are not supported, as Julia's default constructors do useful conversions that would otherwise be overwritten. Moreover, a constructor that uses `new` without passing a `DynamicStructs.DynamicProperties` will not properly instantiate the dynamic instance.
 
 ## See also
 

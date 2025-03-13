@@ -10,6 +10,6 @@ include("properties.jl")
 
 include("dynamic.jl")
 export isdynamictype, isdynamic
-export @dynamic, @construct
+export @dynamic
 
 end
