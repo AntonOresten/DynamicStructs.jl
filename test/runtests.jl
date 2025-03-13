@@ -13,7 +13,7 @@ using Test
 
         @test propertynames(p, NoFields) == (:occupation,)
         @test propertynames(p, OnlyFields) == (:name, :age)
-        @test propertynames(p, OnlyFields, true) == (DynamicStructs.DYNAMIC_PROPERTIES_FIELD_NAME, :name, :age)
+        @test propertynames(p, OnlyFields, true) == (DynamicStructs.PROPERTIES_FIELD_NAME, :name, :age)
 
         @test propertyvalues(p, NoFields) == ("Besserwisser",)
         @test propertyvalues(p, OnlyFields) == ("Neil", 66)
@@ -41,7 +41,7 @@ using Test
     @testset "Show" begin
         p = Person("Jacob", 19, instrument="guitar")
         str = sprint(show, p)
-        @test str == "Person(\"Jacob\", 19; instrument=\"guitar\")"
+        @test str == "Person(DynamicStructs.Properties(instrument = \"guitar\"), \"Jacob\", 19)"
     end
 
     @testset "Hash" begin

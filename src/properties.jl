@@ -1,33 +1,45 @@
-struct NoFields end
-struct OnlyFields end
+mutable struct Properties
+    dict::LittleDict{Symbol,Any,Vector{Symbol},Vector{Any}}
+    Properties(; kwargs...) = isempty(kwargs) ? new() : new(LittleDict{Symbol,Any}(kwargs...))
+end
 
-@deprecate Base.propertynames(x, ::NoFields, private=false) propertynames(x, NoFields, private) false
-@deprecate Base.propertynames(x, ::OnlyFields, private=false) propertynames(x, OnlyFields, private) false
+@inline isinitialized(x::Properties) = isdefined(x, :dict)
+@inline initialize!(x::Properties) = (setfield!(x, :dict, LittleDict{Symbol,Any}()))
+@inline propertydict(x::Properties) = getfield(x, :dict)
 
-"""
-    Base.propertynames(x, ::Type{NoFields}, private=false)
+not_found_error(x, name) = throw(ErrorException("$(typeof(x)) instance has no field or property $name"))
 
-Excludes field names.
-"""
-Base.propertynames(x, ::Type{NoFields}, private=false) = Tuple(setdiff(propertynames(x, private), fieldnames(typeof(x))))
+_propertynames(x::Properties) = (propertydict(x).keys...,)
+Base.propertynames(x::Properties) = isinitialized(x) ? _propertynames(x) : ()
 
-"""
-    Base.propertynames(x, ::Type{OnlyFields}, private=false)
+hasnoproperty(x::Properties) = !isinitialized(x) || isempty(propertydict(x))
+Base.hasproperty(x::Properties, key::Symbol) = !hasnoproperty(x) && key in _propertynames(x)
 
-Includes only field names.
-"""
-Base.propertynames(x, ::Type{OnlyFields}, private=false) = Tuple(setdiff(fieldnames(typeof(x)), setdiff(propertynames(x, true), propertynames(x, private))))
+function Base.getproperty(x::Properties, key::Symbol, @nospecialize(top = x))
+    isinitialized(x) || not_found_error(top, key)
+    get(() -> not_found_error(top, key), propertydict(x), key)
+end
 
-"""
-    propertyvalues(x, args...)
+function Base.setproperty!(x::Properties, key::Symbol, value)
+    isinitialized(x) || initialize!(x)
+    setindex!(propertydict(x), value, key)
+    value
+end
 
-Get a tuple of the current dynamic properties. `args` is passed to `propertynames`.
-"""
-propertyvalues(x, args...) = Tuple(getproperty(x, name) for name in propertynames(x, args...))
+function Base.delete!(x::Properties, key::Symbol)
+    hasnoproperty(x) || delete!(propertydict(x), key)
+    x
+end
 
-"""
-    propertypairs(x, args...)
-
-Get a tuple of the current dynamic properties and their values. `args` is passed to `propertynames`.
-"""
-propertypairs(x, args...) = Tuple(name => getproperty(x, name) for name in propertynames(x, args...))
+function Base.show(io::IO, x::Properties)
+    show(io, Properties)
+    print(io, "(")
+    if isinitialized(x)
+        for (i, (key, value)) in enumerate(propertydict(x))
+            i > 1 && print(io, ", ")
+            print(io, key, " = ")
+            show(io, value)
+        end
+    end
+    print(io, ")")
+end
