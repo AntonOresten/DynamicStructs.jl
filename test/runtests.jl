@@ -41,7 +41,7 @@ using Test
     @testset "Show" begin
         p = Person("Jacob", 19, instrument="guitar")
         str = sprint(show, p)
-        @test str == "Person(DynamicStructs.Properties(instrument = \"guitar\"), \"Jacob\", 19)"
+        @test str == "Person(\"Jacob\", 19; instrument = \"guitar\")"
     end
 
     @testset "Hash" begin
