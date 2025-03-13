@@ -1,5 +1,6 @@
 # DynamicStructs
 
+[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://antonoresten.github.io/DynamicStructs.jl/stable/)
 [![Coverage](https://codecov.io/gh/AntonOresten/DynamicStructs.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/AntonOresten/DynamicStructs.jl)
 
 DynamicStructs is a Julia package that allows you to create structs with dynamic properties. These properties behave similarly to fields of type `Any` in mutable structs, but are bound to the instance rather than the type, and can be added and deleted at runtime.
@@ -36,25 +37,6 @@ Spaceship("Hail Mary"; crew=["Grace"])
 julia> hasproperty(ship, :fuel)
 false
 ```
-
-## Features
-
-- Create structs with both fields and dynamic properties using the `@dynamic` macro.
-- Use `mutable struct` to allow for modifying field values.
-- Type safety for *fields*.
-- Add, modify, and delete dynamic properties at runtime.
-- Check if types and instances are dynamic with `isdynamictype` and `isdynamic`:
-
-```julia
-julia> (isdynamictype(Spaceship), isdynamic(ship), isdynamic(Spaceship))
-(true, true, false)
-```
-
-- `NoFields` and `OnlyFields` singleton types for methods of `Base.propertynames`:
-  - `propertynames(x, NoFields)` returns only non-field property names.
-  - `propertynames(x, OnlyFields)` returns only field names.
-- `propertyvalues` takes the same arguments as `Base.propertynames` and iterates over the names to return a tuple of values.
-- `propertypairs` returns the pairs, mapping the names of `Base.propertynames` to the values of `propertyvalues`
 
 ## See also
 
