@@ -1,4 +1,6 @@
-using Base.Meta: isexpr, uncurly
+using Base.Meta: isexpr
+
+uncurly(x) = isexpr(x, :curly) ? x.args[1] : x
 
 """
     isdynamictype(T)
