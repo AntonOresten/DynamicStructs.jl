@@ -18,11 +18,45 @@ const PROPERTIES_FIELD_NAME = :__properties
 
 function deconstruct_field(f)
     f isa Symbol && return f, :Any
-    Meta.isexpr(f, :const) && return deconstruct_field(f.args[1])
+    Meta.isexpr(f, (:const, :atomic)) && return deconstruct_field(f.args[1])
     Meta.isexpr(f, :(::)) && return f.args[1], f.args[2]
     return nothing
 end
 
+function showdynamic(io::IO, @nospecialize x)
+    show(io, typeof(x))
+    print(io, "(")
+    fieldvals = propertyvalues(x, OnlyFields)
+    for (i, val) in enumerate(fieldvals)
+        show(io, val)
+        i < length(fieldvals) && print(io, ", ")
+    end
+    for (i, (prop, val)) in enumerate(propertypairs(x, NoFields))
+        print(io, isone(i) ? "; " : ", ")
+        print(io, prop, " = ")
+        show(io, val)
+    end
+    print(io, ")")
+end
+
+"""
+    @dynamic [mutable] struct ... end
+
+Define a dynamic struct:
+
+- Instances of dynamic structs have dynamic properties that can be added/deleted at runtime.
+  These properties are similar to `Any`-typed fields of structs in terms of performance.
+
+- Fields remain statically typed and accessing them compiles similarly to structs,
+  so performance should not be significantly affected.
+
+- The macro adds a hidden field for storing dynamic properties with lazy initialization,
+  meaning that the underlying storage is not allocated until the first dynamic property is added.
+
+- The default constructors of dynamic structs accept keyword arguments for dynamic properties,
+  with a `Base.show` method that reflects this.
+  These are only present if the block is free of any non-field expressions, such as custom constructors.
+"""
 macro dynamic(expr::Expr)
     expr = macroexpand(__module__, expr)
     Meta.isexpr(expr, :struct) || error("`@dynamic` can only be applied to struct definitions")
@@ -31,12 +65,10 @@ macro dynamic(expr::Expr)
     struct_name = Meta.isexpr(T, :curly) ? T.args[1] : T
 
     fieldlines = deconstruct_field.(Base.remove_linenums!(copy(fieldsblock)).args)
-    has_other_things = any(isnothing, fieldlines)
-    filter!(!isnothing, fieldlines)
-    fields = first.(fieldlines)
-    types = last.(fieldlines)
 
-    if !has_other_things
+    if !any(isnothing, fieldlines)
+        fields = first.(fieldlines)
+        types = last.(fieldlines)
         asserts = [Expr(:(::), f, t) for (f,t) in zip(fields, types)]
         constructors = if !Meta.isexpr(T, :curly)
             quote
@@ -46,6 +78,7 @@ macro dynamic(expr::Expr)
                 end
                 $struct_name($(fields...); kwargs...) =
                     new($Properties(; kwargs...), $(fields...))
+                Base.show(io::IO, x::$struct_name) = $showdynamic(io, x)
             end
         else
             P = T.args[2:end]
@@ -55,6 +88,7 @@ macro dynamic(expr::Expr)
                     new{$(Q...)}($Properties(; kwargs...), $(fields...))
                 $struct_name{$(Q...)}($(fields...); kwargs...) where {$(Q...)} =
                     new{$(Q...)}($Properties(; kwargs...), $(fields...))
+                Base.show(io::IO, x::$struct_name) = showdynamic(io, x)
             end
         end
         push!(fieldsblock.args, constructors)
