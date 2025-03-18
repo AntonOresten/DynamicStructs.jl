@@ -33,6 +33,8 @@ using DynamicStructs
 end
 
 gpu = GPU("RTX 6000 Ada", 2022, hourly_cost = 0.18)
+
+Docs.getdoc(gpu) # or ?gpu in a real REPL
 ```
 
 You can also create mutable dynamic structs:
@@ -100,6 +102,7 @@ The `@dynamic` macro defines methods for the following functions:
 - `Base.delete!`
 - `Base.hash`
 - `Base.:(==)`
+- `Base.Docs.getdoc`
 
 This prevents you from defining your own methods without disabling
 file precompilation (through `__precompile__(false)`).
@@ -112,8 +115,9 @@ Each of the functions above redirect to their respective generic functions in `D
 - `DynamicStructs.dynamic_delete!`
 - `DynamicStructs.dynamic_hash`
 - `DynamicStructs.dynamic_equality`
+- `DynamicStructs.dynamic_getdoc`
 
-These are specifically defined for dynamic structs, and should be used to inherit the default behaviors.
+These are specifically defined for dynamic structs, and may be used to inherit the default behaviors.
 
 Let us demonstrate with a silly example:
 

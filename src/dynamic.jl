@@ -62,21 +62,27 @@ function dynamic_equality(x, y)
 end
 
 function dynamic_getdoc(x)
-    p = propertynames(x, OnlyFields)
-    fields_string = isempty(p) ? "No fields" : join(map(((name, T),) -> "\n\n `$name :: $T`", zip(p, typeof(x).types[2:end])))
-    p = propertynames(x, NoFields)
-    properties_string = isempty(p) ? "No dynamic properties" : join(map(name -> "\n\n `$name :: Any`", p))
+    p = string.(propertynames(x, OnlyFields))
+    m = maximum(length, p; init=0)
+    fields_string = isempty(p) ? "No fields" : join(map(((name, T),) -> "$name"*" "^(m-length(name))*" :: $T", zip(p, typeof(x).types[2:end])), "\n")
+    p = string.(propertynames(x, NoFields))
+    m = maximum(length, p; init=0)
+    properties_string = isempty(p) ? "No dynamic properties" : join(map(name -> "$name"*" "^(m-length(name))*" :: Any", p), "\n")
 
     Markdown.parse("""
-    Instance of type `$(typeof(x))`.
+    Instance of dynamic struct `$(typeof(x))`.
 
     # Fields
 
+    ```
     $fields_string
+    ```
 
     # Dynamic properties
 
+    ```
     $properties_string
+    ```
     """)
 end
 
