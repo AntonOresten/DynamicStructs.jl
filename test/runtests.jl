@@ -159,4 +159,13 @@ using Test
         VERSION ≥ v"1.8" && include("const-field.jl")
     end
 
+    @testset "built-in constructors" begin
+        @dynamic struct BuiltinPerson
+            name::String
+            0 # detected as non-field, removing dynamic constructor
+        end
+
+        @test length(methods(BuiltinPerson)) == 0
+    end
+
 end
