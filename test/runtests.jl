@@ -1,5 +1,6 @@
 using DynamicStructs
 using Test
+using Markdown
 
 @testset "DynamicStructs.jl" begin
 
@@ -66,6 +67,15 @@ using Test
         @test hash(Vec(0, y=1)) != hash(Vec(1, y=1))
         @test hash(Vec(0, y=1)) != hash(Vec(0, y=0))
         @test hash(Vec(0, y=1)) != hash(Vec(0, y=1, z=2))
+    end
+
+    @testset "docstrings" begin
+        @dynamic struct DocPerson
+            name::String
+            age::Int
+        end
+
+        @test Base.Docs.getdoc(DocPerson("Terry", 30)) isa Markdown.MD
     end
 
     @testset "Constructor with Keywords" begin
