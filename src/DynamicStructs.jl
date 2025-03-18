@@ -1,7 +1,6 @@
 module DynamicStructs
 
 using Compat: @compat
-using OrderedCollections: LittleDict
 
 include("utils.jl")
 export NoFields, OnlyFields

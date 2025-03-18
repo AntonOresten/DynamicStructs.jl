@@ -1,3 +1,5 @@
+using OrderedCollections: LittleDict
+
 mutable struct Properties
     dict::LittleDict{Symbol,Any,Vector{Symbol},Vector{Any}}
     Properties(; kwargs...) = isempty(kwargs) ? new() : new(LittleDict{Symbol,Any}(kwargs...))

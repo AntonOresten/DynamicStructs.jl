@@ -1,3 +1,5 @@
+import Markdown
+
 """
     isdynamictype(T)
 
@@ -52,11 +54,30 @@ function dynamic_hash(x, h::UInt)
     hash(typeof(x), field_hash)
 end
 
-function dynamic_isequal(x, y)
+function dynamic_equality(x, y)
     x_empty, y_empty = hasnoproperty(properties(x)), hasnoproperty(properties(y))
     x_empty != y_empty && return false
     !x_empty && !y_empty && propertydict(properties(x)) != propertydict(properties(y)) && return false
     !any(name -> getfield(x, name) != getfield(y, name), fieldnames(typeof(x))[2:end])
+end
+
+function dynamic_getdoc(x)
+    p = propertynames(x, OnlyFields)
+    fields_string = isempty(p) ? "No fields" : join(map(((name, T),) -> "\n\n `$name :: $T`", zip(p, typeof(x).types[2:end])))
+    p = propertynames(x, NoFields)
+    properties_string = isempty(p) ? "No dynamic properties" : join(map(name -> "\n\n `$name :: Any`", p))
+
+    Markdown.parse("""
+    Instance of type `$(typeof(x))`.
+
+    # Fields
+
+    $fields_string
+
+    # Dynamic properties
+
+    $properties_string
+    """)
 end
 
 
@@ -126,8 +147,9 @@ macro dynamic(expr::Expr)
         Base.setproperty!(x::$struct_name, name::Symbol, value) = $dynamic_setproperty!(x, name, value)
         Base.delete!(x::$struct_name, name::Symbol) = $dynamic_delete!(x, name)
         Base.hash(x::$struct_name, h::UInt) = $dynamic_hash(x, h)
-        Base.:(==)(x::$struct_name, y::$struct_name) = $dynamic_isequal(x, y)
+        Base.:(==)(x::$struct_name, y::$struct_name) = $dynamic_equality(x, y)
         $(:(DynamicStructs.isdynamictype))(@nospecialize T::Type{$struct_name}) = true
+        Base.Docs.getdoc(x::$struct_name) = $dynamic_getdoc(x)
     end
 
     insert!(fieldsblock.args, 1, dynamic_methods)
