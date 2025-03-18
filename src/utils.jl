@@ -1,4 +1,15 @@
+"""
+    NoFields
+
+Pass to [`Base.propertynames`](@ref), [`propertyvalues`](@ref), or [`propertypairs`](@ref) to exclude field names.
+"""
 struct NoFields end
+
+"""
+    OnlyFields
+
+Pass to [`Base.propertynames`](@ref), [`propertyvalues`](@ref), or [`propertypairs`](@ref) to include only field names.
+"""
 struct OnlyFields end
 
 Base.propertynames(x, ::NoFields, private=false) = propertynames(x, NoFields, private)
@@ -6,7 +17,6 @@ Base.propertynames(x, ::OnlyFields, private=false) = propertynames(x, OnlyFields
 
 """
     Base.propertynames(x, ::Type{NoFields}, private=false)
-    Base.propertynames(x, ::NoFields, private=false)
 
 Excludes field names.
 """
@@ -14,7 +24,6 @@ Base.propertynames(x, ::Type{NoFields}, private=false) = Tuple(setdiff(propertyn
 
 """
     Base.propertynames(x, ::Type{OnlyFields}, private=false)
-    Base.propertynames(x, ::OnlyFields, private=false)
 
 Includes only field names.
 """
@@ -23,13 +32,13 @@ Base.propertynames(x, ::Type{OnlyFields}, private=false) = Tuple(setdiff(fieldna
 """
     propertyvalues(x, args...)
 
-Get a tuple of the current dynamic properties. `args` is passed to `propertynames`.
+Get a tuple of the current property values. `args` is propagated to [`Base.propertynames`](@ref).
 """
 propertyvalues(x, args...) = Tuple(getproperty(x, name) for name in propertynames(x, args...))
 
 """
     propertypairs(x, args...)
 
-Get a tuple of the current dynamic properties and their values. `args` is passed to `propertynames`.
+Get a tuple of the current property names and values. `args` is propagated to [`Base.propertynames`](@ref).
 """
 propertypairs(x, args...) = Tuple(name => getproperty(x, name) for name in propertynames(x, args...))
