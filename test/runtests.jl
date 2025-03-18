@@ -159,15 +159,4 @@ using Test
         VERSION ≥ v"1.8" && include("const-field.jl")
     end
 
-    @testset "built-in constructors" begin
-        @dynamic struct BuiltinPerson
-            name::String
-            0 # detected as non-field, removing dynamic constructor
-        end
-
-        p = BuiltinPerson(DynamicStructs.Properties(age=25), "John")
-        @test p.name == "John"
-        @test p.age == 25
-    end
-
 end

@@ -110,31 +110,34 @@ macro dynamic(expr::Expr)
                     new{$(Q...)}($Properties(; kwargs...), $(fields...))
             end
         end
-        push!(fieldsblock.args, constructors)
-        push!(fieldsblock.args, quote
+        insert!(fieldsblock.args, 1, constructors)
+        insert!(fieldsblock.args, 1, quote
             Base.show(io::IO, x::$struct_name) = $showdynamic(io, x)
         end)
     end
 
     insert!(fieldsblock.args, 1, :($PROPERTIES_FIELD_NAME::$Properties))
 
-    return quote
-        $(esc(:($Base.@__doc__ $expr)))
+    dynamic_methods = quote
+        Base.hasproperty(x::$struct_name, name::Symbol) = $_hasproperty(x, name)
+        Base.propertynames(x::$struct_name) = $_propertynames(x)
+        Base.propertynames(x::$struct_name, private::Bool) = $_propertynames(x, private)
+        Base.getproperty(x::$struct_name, name::Symbol) = $_getproperty(x, name)
+        Base.setproperty!(x::$struct_name, name::Symbol, value) = $_setproperty!(x, name, value)
+        Base.delete!(x::$struct_name, name::Symbol) = $_delete!(x, name)
+        Base.hash(x::$struct_name, h::UInt) = $_hash(x, h)
+        Base.:(==)(x::$struct_name, y::$struct_name) = $_isequal(x, y)
 
-        Base.hasproperty(x::$(esc(struct_name)), name::Symbol) = $_hasproperty(x, name)
-        Base.propertynames(x::$(esc(struct_name))) = $_propertynames(x)
-        Base.propertynames(x::$(esc(struct_name)), private::Bool) = $_propertynames(x, private)
-        Base.getproperty(x::$(esc(struct_name)), name::Symbol) = $_getproperty(x, name)
-        Base.setproperty!(x::$(esc(struct_name)), name::Symbol, value) = $_setproperty!(x, name, value)
-        Base.delete!(x::$(esc(struct_name)), name::Symbol) = $_delete!(x, name)
-        Base.hash(x::$(esc(struct_name)), h::UInt) = $_hash(x, h)
-        Base.:(==)(x::$(esc(struct_name)), y::$(esc(struct_name))) = $_isequal(x, y)
-
-        function $(:(DynamicStructs.isdynamictype))(T::Type{$(esc(struct_name))})
+        function $(:(DynamicStructs.isdynamictype))(T::Type{$struct_name})
             @nospecialize T
             true
         end
+    end
 
-        nothing
+    insert!(fieldsblock.args, 1, dynamic_methods)
+
+    quote
+        $(esc(:($Base.@__doc__ $expr)))
+        $nothing
     end
 end
