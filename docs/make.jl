@@ -14,7 +14,7 @@ makedocs(;
     ),
     pages=[
         "Home" => "index.md",
-        "Dynamic structs" => "dynamic.md",
+        "Dynamic Structs" => "dynamic.md",
         "Performance" => "performance.md",
         "Utilities" => "utilities.md",
     ],

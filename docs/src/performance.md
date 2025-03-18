@@ -9,7 +9,7 @@ CurrentModule = DynamicStructs
 A comparison between accessing static *fields* of regular and dynamic structs shows that performance impact is minimal,
 and the LLVM code of accessing fields of a dynamic struct is still "nice".
 
-```@repl
+```@repl performance
 using DynamicStructs, Chairmarks, InteractiveUtils
 
 struct A
@@ -40,45 +40,33 @@ which gets accessed if the property is not a field. This flexibility makes for a
 but is also inherently type-unstable, meaning they will perform similarly to a field of unspecified type.
 The LLVM code generated from dynamic property access is however significantly longer.
 
-```@repl
-using DynamicStructs, Chairmarks
-
+```@repl performance
 struct C
     x::Int
     y
 end
 
-@dynamic struct D
-    x::Int
-end
-
-c, d = C(1, 2), D(1, y=2);
+b, c = B(1, y=2), b(1, 2);
 
 g(arg) = arg.y^2;
 
-@b g($c)
+@b g($b)
 
-@b g($d)
+@b g($c)
 ```
 
 ## Tips
 
 ### Type assertions for type stability and improved performance
 
-```@repl
-using DynamicStructs, Chairmarks
+```@repl performance
+v = [B(i, y=i) for i in 1:100];
 
-@dynamic mutable struct A
-    x::Int
-end
+@b sum(b.x for b in $v)
 
-v = [A(i, y=i) for i in 1:100];
+@b sum(b.y for b in $v)
 
-@b sum(a.x for a in $v)
-
-@b sum(a.y for a in $v)
-
-@b sum(a.y::Int for a in $v)
+@b sum(b.y::Int for b in $v)
 ```
 
 ### Function barriers help... sometimes
@@ -86,10 +74,8 @@ v = [A(i, y=i) for i in 1:100];
 We observe that in one scenario, broadcasted addition of short vectors is 2x faster with a function barrier,
 but 2x slower for longer vectors. This happens also with `Any`-typed fields of regular structs.
 
-```@repl
-using DynamicStructs, Chairmarks
-
-@dynamic struct A end
+```@repl performance
+@dynamic struct D end
 
 f(a, b) = a.x .+ a.x;
 
@@ -97,13 +83,13 @@ g(x1, x2) = x1 .+ x2;
 
 f_barrier(a, b) = g(a.x, b.x);
 
-a, b = A(x = rand(1)), A(x = rand(1));
+a, b = D(x = rand(1)), D(x = rand(1));
 
 @b f($a, $b)
 
 @b f_barrier($a, $b)
 
-a, b = a, b = A(x = rand(10000)), A(x = rand(10000));
+a, b = D(x = rand(10000)), D(x = rand(10000));
 
 @b f($a, $b)
 
