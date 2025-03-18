@@ -39,20 +39,20 @@ function showdynamic(io::IO, @nospecialize x)
     print(io, ")")
 end
 
-_hasproperty(x, name::Symbol) = hasfield(typeof(x), name) || hasproperty(properties(x), name)
-_propertynames(x) = (fieldnames(typeof(x))[2:end]..., propertynames(properties(x))...)
-_propertynames(x, private::Bool) = private ? (fieldnames(typeof(x))..., propertynames(properties(x))...) : Base.propertynames(x)
-_getproperty(x, name::Symbol) = hasfield(typeof(x), name) ? getfield(x, name) : getproperty(properties(x), name, x)
-_setproperty!(x, name::Symbol, value) = hasfield(typeof(x), name) ? setfield!(x, name, value) : setproperty!(properties(x), name, value)
-_delete!(x, name::Symbol) = (delete!(properties(x), name); x)
+dynamic_hasproperty(x, name::Symbol) = hasfield(typeof(x), name) || hasproperty(properties(x), name)
+dynamic_propertynames(x) = (fieldnames(typeof(x))[2:end]..., propertynames(properties(x))...)
+dynamic_propertynames(x, private::Bool) = private ? (fieldnames(typeof(x))..., propertynames(properties(x))...) : Base.propertynames(x)
+dynamic_getproperty(x, name::Symbol) = hasfield(typeof(x), name) ? getfield(x, name) : getproperty(properties(x), name, x)
+dynamic_setproperty!(x, name::Symbol, value) = hasfield(typeof(x), name) ? setfield!(x, name, value) : setproperty!(properties(x), name, value)
+dynamic_delete!(x, name::Symbol) = (delete!(properties(x), name); x)
 
-function _hash(x, h::UInt)
+function dynamic_hash(x, h::UInt)
     p_hash = hasnoproperty(properties(x)) ? h : hash(propertydict(properties(x)), h)
     field_hash = foldr(hash, getfield(x, fieldname) for fieldname in fieldnames(typeof(x))[2:end]; init=p_hash)
     hash(typeof(x), field_hash)
 end
 
-function _isequal(x, y)
+function dynamic_isequal(x, y)
     x_empty, y_empty = hasnoproperty(properties(x)), hasnoproperty(properties(y))
     x_empty != y_empty && return false
     !x_empty && !y_empty && propertydict(properties(x)) != propertydict(properties(y)) && return false
@@ -119,19 +119,15 @@ macro dynamic(expr::Expr)
     insert!(fieldsblock.args, 1, :($PROPERTIES_FIELD_NAME::$Properties))
 
     dynamic_methods = quote
-        Base.hasproperty(x::$struct_name, name::Symbol) = $_hasproperty(x, name)
-        Base.propertynames(x::$struct_name) = $_propertynames(x)
-        Base.propertynames(x::$struct_name, private::Bool) = $_propertynames(x, private)
-        Base.getproperty(x::$struct_name, name::Symbol) = $_getproperty(x, name)
-        Base.setproperty!(x::$struct_name, name::Symbol, value) = $_setproperty!(x, name, value)
-        Base.delete!(x::$struct_name, name::Symbol) = $_delete!(x, name)
-        Base.hash(x::$struct_name, h::UInt) = $_hash(x, h)
-        Base.:(==)(x::$struct_name, y::$struct_name) = $_isequal(x, y)
-
-        function $(:(DynamicStructs.isdynamictype))(T::Type{$struct_name})
-            @nospecialize T
-            true
-        end
+        Base.hasproperty(x::$struct_name, name::Symbol) = $dynamic_hasproperty(x, name)
+        Base.propertynames(x::$struct_name) = $dynamic_propertynames(x)
+        Base.propertynames(x::$struct_name, private::Bool) = $dynamic_propertynames(x, private)
+        Base.getproperty(x::$struct_name, name::Symbol) = $dynamic_getproperty(x, name)
+        Base.setproperty!(x::$struct_name, name::Symbol, value) = $dynamic_setproperty!(x, name, value)
+        Base.delete!(x::$struct_name, name::Symbol) = $dynamic_delete!(x, name)
+        Base.hash(x::$struct_name, h::UInt) = $dynamic_hash(x, h)
+        Base.:(==)(x::$struct_name, y::$struct_name) = $dynamic_isequal(x, y)
+        $(:(DynamicStructs.isdynamictype))(@nospecialize T::Type{$struct_name}) = true
     end
 
     insert!(fieldsblock.args, 1, dynamic_methods)
