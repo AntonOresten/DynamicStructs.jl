@@ -13,6 +13,11 @@ using Pkg
 pkg"add DynamicStructs"
 ```
 
+## Contents
+
+```@contents
+```
+
 ## Index
 
 ```@index

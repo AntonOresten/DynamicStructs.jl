@@ -37,5 +37,5 @@ propertypairs(ship)
 
 propertypairs(ship, OnlyFields)
 
-propertypairs(ship, true) # shows all properties, including private
+ship == Spaceship(propertyvalues(ship, OnlyFields)...; propertypairs(ship, NoFields)...)# recreate instance
 ```
