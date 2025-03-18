@@ -92,7 +92,7 @@ Dynamic structs include a private `__properties` field that stores all dynamic p
 
 The default constructors of dynamic structs accept keyword arguments for dynamic properties, and a custom `Base.show` method provides a clean representation.
 
-## Overwriting dynamic methods
+## Overwriting Dynamic Methods
 
 The `@dynamic` macro defines methods for the following functions:
 - `Base.hasproperty`

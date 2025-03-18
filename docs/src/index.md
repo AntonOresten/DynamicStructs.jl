@@ -2,7 +2,7 @@
 CurrentModule = DynamicStructs
 ```
 
-# DynamicStructs
+# Overview
 
 Documentation for [DynamicStructs](https://github.com/AntonOresten/DynamicStructs.jl).
 
@@ -16,6 +16,7 @@ pkg"add DynamicStructs"
 ## Contents
 
 ```@contents
+Pages = ["index.md", "dynamic.md", "performance.md", "utilities.md"]
 ```
 
 ## Index

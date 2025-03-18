@@ -37,5 +37,5 @@ propertypairs(ship)
 
 propertypairs(ship, OnlyFields)
 
-ship == Spaceship(propertyvalues(ship, OnlyFields)...; propertypairs(ship, NoFields)...)# recreate instance
+ship == Spaceship(propertyvalues(ship, OnlyFields)...; propertypairs(ship, NoFields)...)
 ```
