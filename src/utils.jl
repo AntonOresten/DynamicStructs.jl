@@ -1,17 +1,14 @@
 """
-    NoFields
-
-Pass to [`Base.propertynames`](@ref), [`propertyvalues`](@ref), or [`propertypairs`](@ref) to exclude field names.
+Insert as second argument to [`Base.propertynames`](@ref), [`propertyvalues`](@ref), or [`propertypairs`](@ref) to exclude field names.
 """
 struct NoFields end
 
 """
-    OnlyFields
-
-Pass to [`Base.propertynames`](@ref), [`propertyvalues`](@ref), or [`propertypairs`](@ref) to include only field names.
+Insert as second argument to [`Base.propertynames`](@ref), [`propertyvalues`](@ref), or [`propertypairs`](@ref) to include only field names.
 """
 struct OnlyFields end
 
+# deprecated
 Base.propertynames(x, ::NoFields, private=false) = propertynames(x, NoFields, private)
 Base.propertynames(x, ::OnlyFields, private=false) = propertynames(x, OnlyFields, private)
 

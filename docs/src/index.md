@@ -6,9 +6,14 @@ CurrentModule = DynamicStructs
 
 Documentation for [DynamicStructs](https://github.com/AntonOresten/DynamicStructs.jl).
 
-```@index
+## Installation
+
+```julia
+using Pkg
+pkg"add DynamicStructs"
 ```
 
-```@autodocs
-Modules = [DynamicStructs]
+## Index
+
+```@index
 ```

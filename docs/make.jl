@@ -1,12 +1,7 @@
 using DynamicStructs
 using Documenter
 
-DocMeta.setdocmeta!(
-    DynamicStructs,
-    :DocTestSetup,
-    :(using DynamicStructs);
-    recursive=true,
-)
+DocMeta.setdocmeta!(DynamicStructs, :DocTestSetup, :(using DynamicStructs); recursive=true)
 
 makedocs(;
     modules=[DynamicStructs],
@@ -19,6 +14,9 @@ makedocs(;
     ),
     pages=[
         "Home" => "index.md",
+        "Dynamic structs" => "dynamic.md",
+        "Performance" => "performance.md",
+        "Utilities" => "utilities.md",
     ],
     doctest=true,
 )
