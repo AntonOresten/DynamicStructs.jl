@@ -154,7 +154,7 @@ macro dynamic(expr::Expr)
         Base.delete!(x::$struct_name, name::Symbol) = $dynamic_delete!(x, name)
         Base.hash(x::$struct_name, h::UInt) = $dynamic_hash(x, h)
         Base.:(==)(x::$struct_name, y::$struct_name) = $dynamic_equality(x, y)
-        $(:(DynamicStructs.isdynamictype))(@nospecialize T::Type{$struct_name}) = true
+        $(:(DynamicStructs.isdynamictype))(@nospecialize T::Type{<:$struct_name}) = true
         Base.Docs.getdoc(x::$struct_name) = $dynamic_getdoc(x)
     end
 

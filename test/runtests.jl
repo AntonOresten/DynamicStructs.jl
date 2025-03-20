@@ -117,6 +117,7 @@ using Markdown
         p = GenericPerson("ID001", nickname="Dave")
         @test p.id == "ID001"
         @test p.nickname == "Dave"
+        @test isdynamic(p)
         @test GenericPerson{String}("ID001", nickname="Dave") == p
     end
 

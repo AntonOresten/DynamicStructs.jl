@@ -46,7 +46,7 @@ struct C
     y
 end
 
-b, c = B(1, y=2), b(1, 2);
+b, c = B(1, y=2), C(1, 2);
 
 g(arg) = arg.y^2;
 
@@ -83,15 +83,15 @@ g(x1, x2) = x1 .+ x2;
 
 f_barrier(a, b) = g(a.x, b.x);
 
-a, b = D(x = rand(1)), D(x = rand(1));
+d = D(x = rand(1));
 
-@b f($a, $b)
+@b f($d, $d)
 
-@b f_barrier($a, $b)
+@b f_barrier($d, $d)
 
-a, b = D(x = rand(10000)), D(x = rand(10000));
+d = D(x = rand(10000));
 
-@b f($a, $b)
+@b f($d, $d)
 
-@b f_barrier($a, $b)
+@b f_barrier($d, $d)
 ```
