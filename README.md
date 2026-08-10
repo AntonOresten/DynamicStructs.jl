@@ -36,6 +36,36 @@ julia> hasproperty(ship, :fuel)
 false
 ```
 
+## Performance
+
+Dynamic properties are stored in a dictionary-like structure, which can introduce overhead and type instability compared to static fields. To mitigate this, consider using **function barriers**. Wrapping operations that use dynamic properties in a separate function allows Julia's compiler to infer types more effectively, often resulting in significant speedups and fewer allocations.
+
+```julia
+julia> using DynamicStructs, BenchmarkTools
+
+julia> @dynamic struct A end
+julia> a = A(x = [1]); b = A(x = [2]);
+
+julia> f(a, b) = a.x .+ b.x
+f (generic function with 1 method)
+
+julia> @benchmark f($a, $b)
+  memory estimate:  96 bytes
+  allocs estimate:  2
+  ...
+
+julia> g(x1, x2) = x1 .+ x2
+g (generic function with 1 method)
+
+julia> f_barrier(a, b) = g(a.x, b.x)
+f_barrier (generic function with 1 method)
+
+julia> @benchmark f_barrier($a, $b)
+  memory estimate:  64 bytes
+  allocs estimate:  1
+  ...
+```
+
 ## See also
 
 - [DynamicObjects.jl](https://github.com/nsiccha/DynamicObjects.jl)
